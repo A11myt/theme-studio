@@ -64,3 +64,7 @@ wallhaven-Suche, Dialoge, Zwischenablage – mehr nicht.
 Voraussetzungen unter Arch: Rust (`rustup`) und
 `sudo pacman -S --needed webkit2gtk-4.1 libappindicator-gtk3 librsvg`.
 Pakete (.deb/.rpm/AppImage): `pnpm tauri build`.
+
+**Windows-Installer** baut GitHub Actions (`.github/workflows/build.yml`) bei jedem Push:
+Actions → letzter Lauf → Artefakt `theme-studio-windows` (`.exe` bzw. `.msi`). Ein Tag `v*` legt zusätzlich
+einen Release-Entwurf mit allen Installern an.
