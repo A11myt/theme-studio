@@ -17,7 +17,11 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
   (material-colors 0.4.2) als WebAssembly im Browser läuft; geprüft mit 13 Wallpapern – oder eine eigene Farbe
 - **9 Varianten** (tonal-spot, vibrant, expressive …) als Mini-Desktops: Linux-Leiste mit Bubbles oder
   Windows mit komorebi-Leiste und Terminal, jeweils auf dem Wallpaper
-- **Hell/Dunkel, Kontrast**, komplette Palette (Klick kopiert die Farbe)
+- **Hell/Dunkel, Kontrast**, komplette Palette (Klick kopiert die Farbe), auf Wunsch hell + dunkel nebeneinander
+- **Lesbarkeit**: WCAG-Kontrast der wichtigsten Paare als Ampel, Punkt an jeder Palettenfarbe
+- **Terminal**: 16 ANSI-Farben passend zum Theme (klassische Farbtöne, zur Ausgangsfarbe harmonisiert) mit Vorschau
+- **Zufall**, **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), **Import** exportierter `.theme.json` (auch per Drag & Drop)
+- **Tastenkürzel**: 1–9 Variante, D/H dunkel/hell, Z Zufall, Strg+S speichern
 - **Schrift** wie fontgen: Oberfläche, Mono, Akzent + Größen; deine Profile iosevka/hack/jetbrains als Vorlage,
   Auswahl aus den installierten Schriften, Vorschau in den Mini-Desktops. Gespeichert wird nur der Name.
 - **Nerd Fonts von GitHub** (App): Liste des neuesten Releases, Installieren auf Klick – nur Mono + Propo in
@@ -29,7 +33,8 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **Anwenden**: fertige Befehle
   - Windows: `wintheme --color #db79a9 --scheme vibrant --mode dark --font "Iosevka Nerd Font Mono"` (aktuelles Wallpaper)
   - Linux: `matugen color hex '#db79a9' -t scheme-vibrant -m dark`
-- **Dateien**: Theme-Datei, Windows-Terminal-Schema + -Schrift, komorebi-Theme, fontgen-Profil, CSS-Variablen
+- **Dateien** (nach Windows/Linux/Allgemein filterbar): Theme-Datei, Windows-Terminal-Schema + -Schrift, komorebi-Theme,
+  fontgen-Profil, base16-YAML (Stylix, tinted-theming), pywal `colors.json`, Xresources, CSS-Variablen
 - **Vorlagen**: eigene matugen- und fontgen-Vorlagen hochladen (z. B. `alacritty.toml`) → mit dem Theme ausgefüllt
   (`{{colors.<rolle>.<default|dark|light>.<hex|hex_stripped|rgb|rgba>}}`, `{{fonts.ui|mono|accent|ui_size|mono_size|ui_px|mono_px}}`, `{{mode}}`, `{{image}}`)
 

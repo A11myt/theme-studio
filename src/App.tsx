@@ -3,10 +3,13 @@ import { Desktop, type Os } from "./components/Desktop";
 import { FontPanel } from "./components/FontPanel";
 import { Library } from "./components/Library";
 import { NerdFonts } from "./components/NerdFonts";
+import { Readability } from "./components/Readability";
+import { TerminalPreview } from "./components/TerminalPreview";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { Wallhaven } from "./components/Wallhaven";
 import { hueName, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
-import { commands, exportsFor, renderTemplate } from "./lib/exporters";
+import { grade, PARTNER, ratio } from "./lib/contrast";
+import { commands, exportsFor, parseThemeFile, renderTemplate } from "./lib/exporters";
 import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
 import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, storeSettings, type AppSettings } from "./lib/settings";
@@ -36,6 +39,38 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showNerd, setShowNerd] = useState(false);
   const [fontsKey, setFontsKey] = useState(0);
+  const [bothModes, setBothModes] = useState(false);
+  const [group, setGroup] = useState<"alle" | "windows" | "linux" | "allgemein">("alle");
+
+  // ── Rückgängig / Wiederholen: Stände von Farbe + Schrift (Änderungen in kurzer Folge = ein Schritt) ──
+  const past = useRef<{ settings: ThemeSettings; fonts: Fonts }[]>([]);
+  const future = useRef<{ settings: ThemeSettings; fonts: Fonts }[]>([]);
+  const last = useRef({ settings, fonts });
+  const restoring = useRef(false);
+  const [, bump] = useState(0);
+  useEffect(() => {
+    if (restoring.current) { restoring.current = false; last.current = { settings, fonts }; return; }
+    const prev = last.current;
+    if (prev.settings === settings && prev.fonts === fonts) return;
+    const id = setTimeout(() => {
+      past.current = [...past.current.slice(-49), prev];
+      future.current = [];
+      last.current = { settings, fonts };
+      bump((n) => n + 1);
+    }, 400);
+    return () => clearTimeout(id);
+  }, [settings, fonts]);
+  const travel = (from: typeof past, to: typeof future) => {
+    const s = from.current.pop();
+    if (!s) return;
+    to.current.push({ settings, fonts });
+    restoring.current = true;
+    setSettings(s.settings);
+    setFonts(s.fonts);
+    bump((n) => n + 1);
+  };
+  const undo = () => travel(past, future);
+  const redo = () => travel(future, past);
 
   useEffect(() => { void loadSettings().then(setApp); }, []);
 
@@ -120,7 +155,37 @@ export function App() {
     setThemes((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Theme-Datei (.theme.json) einlesen – z. B. vom anderen Rechner
+  const importTheme = async (f: File) => {
+    try {
+      const t = parseThemeFile(await f.text());
+      setSettings(t.settings);
+      if (t.fonts) setFonts(t.fonts);
+      setName(t.name);
+      flash(`„${t.name}“ importiert`);
+    } catch (e) {
+      flash(`Import fehlgeschlagen: ${errText(e)}`, 5000);
+    }
+  };
+
+  // Zufall: zufälliges Bild aus der Sammlung (oder Farbe), Ausgangsfarbe und Variante
+  const surprise = () => {
+    const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+    const schemes = Object.keys(SCHEMES) as SchemeName[];
+    if (images.length) {
+      const i = pick(images);
+      setImageId(i.id);
+      setName(i.name.replace(/\.[^.]+$/, ""));
+      update({ source: pick(i.sources), scheme: pick(schemes) });
+    } else {
+      update({ source: "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0"), scheme: pick(schemes) });
+    }
+  };
+
   const addTemplates = async (files: File[]) => {
+    const themeFiles = files.filter((f) => /\.theme\.json$/i.test(f.name));
+    for (const f of themeFiles) await importTheme(f);
+    files = files.filter((f) => !themeFiles.includes(f));
     const added: StoredTemplate[] = [];
     for (const f of files) {
       const t: StoredTemplate = { id: uid(), name: f.name, output: f.name, text: await f.text(), added: Date.now() };
@@ -159,6 +224,31 @@ export function App() {
   const cmds = commands(settings, fonts);
   const files = exportsFor(themeName, settings, image?.name, fonts);
   const vsSettings = JSON.stringify(vscodeSettings(themeName, fonts), null, 2);
+
+  // Tastenkürzel (nicht beim Tippen): Strg+Z/Strg+Y, Strg+S speichern, 1–9 Variante, D/H Modus, Z Zufall
+  const keys = useRef<(e: KeyboardEvent) => void>(() => {});
+  keys.current = (e: KeyboardEvent) => {
+    const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); void saveTheme(); return; }
+    if (typing || document.querySelector(".overlay")) return;
+    if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+    if (mod || e.altKey) return;
+    const schemes = Object.keys(SCHEMES) as SchemeName[];
+    if (/^[1-9]$/.test(e.key)) update({ scheme: schemes[Number(e.key) - 1] });
+    else if (e.key === "d") update({ mode: "dark" });
+    else if (e.key === "h") update({ mode: "light" });
+    else if (e.key === "z") surprise();
+  };
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => keys.current(e);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
+  const importInput = useRef<HTMLInputElement>(null);
+  const NAV: [string, string][] = [["farbe", "Farbe"], ["schrift", "Schrift"], ["varianten", "Varianten"], ["vorschau", "Vorschau"], ["export", "Export"]];
   const bg = image ? urls[image.id] : undefined;
 
   return (
@@ -169,7 +259,18 @@ export function App() {
           <button type="button" aria-pressed={os === "linux"} onClick={() => setOs("linux")}>Linux</button>
           <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
         </div>
+        <nav className="jump" aria-label="Abschnitte">
+          {NAV.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
+        </nav>
         <span className="grow" />
+        <div className="tools">
+          <button type="button" className="ghost" onClick={undo} disabled={!past.current.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">↶</button>
+          <button type="button" className="ghost" onClick={redo} disabled={!future.current.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">↷</button>
+          <button type="button" className="ghost" onClick={surprise} title="Zufälliges Theme (Z)">Zufall</button>
+          <button type="button" className="ghost" onClick={() => importInput.current?.click()} title=".theme.json einlesen">Import</button>
+          <input ref={importInput} type="file" accept=".json,application/json" hidden
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void importTheme(f); e.target.value = ""; }} />
+        </div>
         <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label="Einstellungen" title="Einstellungen">⚙</button>
         <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name des Themes" aria-label="Name des Themes" />
         <button type="button" className="primary" onClick={saveTheme}>Speichern</button>
@@ -182,7 +283,7 @@ export function App() {
 
       <main className="main">
         {/* Ausgangsfarbe & Einstellungen */}
-        <section className="card setup">
+        <section className="card setup" id="farbe">
           <div className="hero">
             {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">Kein Bild – nur Farbe</div>}
           </div>
@@ -221,18 +322,19 @@ export function App() {
           </div>
         </section>
 
+        <div id="schrift" />
         <FontPanel fonts={fonts} onChange={setFonts} onNerdFonts={() => setShowNerd(true)} refreshKey={fontsKey} />
 
         {/* Alle Varianten nebeneinander */}
-        <section>
-          <h2 className="section-title">Varianten <small>anklicken zum Auswählen</small></h2>
+        <section id="varianten">
+          <h2 className="section-title">Varianten <small>anklicken oder Taste 1–9</small></h2>
           <div className="variants">
             {(Object.keys(SCHEMES) as SchemeName[]).map((k) => {
               const c = palette({ ...settings, scheme: k });
               return (
                 <button key={k} type="button" className="variant" aria-pressed={settings.scheme === k} onClick={() => update({ scheme: k })}>
                   <Desktop c={c} os={os} image={bg} fonts={fonts} />
-                  <span className="vname">{SCHEMES[k].label}<small>{SCHEMES[k].hint}</small></span>
+                  <span className="vname"><kbd>{(Object.keys(SCHEMES) as SchemeName[]).indexOf(k) + 1}</kbd>{SCHEMES[k].label}<small>{SCHEMES[k].hint}</small></span>
                   <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface_container_high].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
                 </button>
               );
@@ -241,10 +343,27 @@ export function App() {
         </section>
 
         {/* Gewählte Variante groß + Palette */}
-        <section className="card detail">
-          <div className="big">
-            <Desktop c={pal} os="linux" image={bg} size="large" fonts={fonts} />
-            <Desktop c={pal} os="windows" image={bg} size="large" fonts={fonts} />
+        <section className="card detail" id="vorschau">
+          <div className="detail-head">
+            <h2>Vorschau <small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"}</small></h2>
+            <span className="grow" />
+            <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} /> Hell und dunkel nebeneinander</label>
+          </div>
+          {bothModes ? (
+            <div className="big">
+              {(["light", "dark"] as Mode[]).map((m) => (
+                <Desktop key={m} c={palette({ ...settings, mode: m })} os={os} image={bg} size="large" fonts={fonts} />
+              ))}
+            </div>
+          ) : (
+            <div className="big">
+              <Desktop c={pal} os="linux" image={bg} size="large" fonts={fonts} />
+              <Desktop c={pal} os="windows" image={bg} size="large" fonts={fonts} />
+            </div>
+          )}
+          <div className="split">
+            <TerminalPreview c={pal} t={settings} fonts={fonts} />
+            <Readability c={pal} />
           </div>
           <div className="palette">
             {PALETTE_GROUPS.map(([title, roles]) => (
@@ -253,10 +372,13 @@ export function App() {
                 <div className="swatches">
                   {roles.map((r) => {
                     const hex = (pal as Record<string, string>)[r];
+                    const partner = PARTNER[r] ? (pal as Record<string, string>)[PARTNER[r]] : undefined;
+                    const cr = partner ? ratio(hex, partner) : 0;
                     return (
-                      <button key={r} type="button" className="swatch" style={{ background: hex, color: onColor(hex) }}
-                        onClick={() => copy(hex)} title="Klicken zum Kopieren">
-                        <span>{r.replace(/_/g, " ")}</span><code>{hex}</code>
+                      <button key={r} type="button" className="swatch" style={{ background: hex, color: partner ?? onColor(hex) }}
+                        onClick={() => copy(hex)} title={`Klicken zum Kopieren${partner ? ` · Kontrast zu ${PARTNER[r].replace(/_/g, " ")}: ${cr.toFixed(1)}` : ""}`}>
+                        <span>{r.replace(/_/g, " ")}</span>
+                        <code>{hex}{partner && <b className={`dot ${grade(cr)}`} />}</code>
                       </button>
                     );
                   })}
@@ -267,7 +389,7 @@ export function App() {
         </section>
 
         {/* Export */}
-        <section className="card export">
+        <section className="card export" id="export">
           <h2>Anwenden</h2>
           <div className="cmd">
             <span>Windows</span><code>{cmds.windows}</code>
@@ -295,16 +417,26 @@ export function App() {
             </li>
           </ul>
 
-          <h2>Dateien {isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
+          <div className="detail-head">
+            <h2>Dateien {isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
+            <span className="grow" />
+            <div className="seg" role="group" aria-label="Dateien filtern">
+              {(["alle", "windows", "linux", "allgemein"] as const).map((g) => (
+                <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>
+                  {{ alle: "Alle", windows: "Windows", linux: "Linux", allgemein: "Allgemein" }[g]}
+                </button>
+              ))}
+            </div>
+          </div>
           <ul className="files">
-            {files.map((f) => (
+            {files.filter((f) => group === "alle" || f.group === group).map((f) => (
               <li key={f.id}>
                 <span><b>{f.label}</b><small>{f.hint}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(f.text)}>Kopieren</button>
                 <button type="button" className="ghost" onClick={() => saveFile(f.filename, f.text)}>Speichern</button>
               </li>
             ))}
-            {templates.map((t) => {
+            {(group === "alle" || group === "linux") && templates.map((t) => {
               const out = () => renderTemplate(t.text, settings, image?.name, fonts);
               return (
                 <li key={t.id}>

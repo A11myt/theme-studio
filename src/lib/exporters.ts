@@ -1,10 +1,14 @@
 // Ausgaben für Linux (matugen/Alacritty) und Windows (wintheme, Windows Terminal, komorebi).
 // Zuordnungen wie in dotfiles (matugen-Vorlagen) und dotfiles-windows (wintheme.py).
-import { palette, type Palette, type ThemeSettings } from "./color";
+import { ansi } from "./ansi";
+import { palette, SCHEMES, type Palette, type ThemeSettings } from "./color";
 import { DEFAULT_FONTS, fontValues, type Fonts } from "./fonts";
+
+export type ExportGroup = "windows" | "linux" | "allgemein";
 
 export interface ExportFile {
   id: string;
+  group: ExportGroup;
   label: string;
   hint: string;
   filename: string;
@@ -46,15 +50,16 @@ export function renderTemplate(text: string, t: ThemeSettings, imageName = "", f
     .replace(/\{\{\s*image\s*\}\}/g, imageName);
 }
 
-function terminalScheme(c: Palette, name: string) {
+function terminalScheme(c: Palette, t: ThemeSettings, name: string) {
+  const a = ansi(c, t);
+  const keys = ["black", "red", "green", "yellow", "blue", "purple", "cyan", "white"];
+  const cap = (k: string) => k[0].toUpperCase() + k.slice(1);
   return {
     name,
     background: c.background, foreground: c.on_surface,
     cursorColor: c.on_surface_variant, selectionBackground: c.primary,
-    black: "#181818", red: c.error, green: c.primary, yellow: c.inverse_primary,
-    blue: c.primary, purple: c.tertiary, cyan: c.secondary, white: "#BAC2DE",
-    brightBlack: "#585B70", brightRed: "#F38BA8", brightGreen: "#A6E3A1", brightYellow: "#F9E2AF",
-    brightBlue: "#89B4FA", brightPurple: "#F5C2E7", brightCyan: "#94E2D5", brightWhite: "#A6ADC8",
+    ...Object.fromEntries(keys.map((k, i) => [k, a.normal[i]])),
+    ...Object.fromEntries(keys.map((k, i) => [`bright${cap(k)}`, a.bright[i]])),
   };
 }
 
@@ -90,24 +95,24 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
   const css = Object.entries(c).map(([k, v]) => `  --${k.replace(/_/g, "-")}: ${v};`).join("\n");
   return [
     {
-      id: "theme", label: "Theme-Datei", hint: "alles in einer Datei – zum Aufheben und Teilen",
+      id: "theme", group: "allgemein", label: "Theme-Datei", hint: "alles in einer Datei – zum Aufheben und Teilen",
       filename: `${s}.theme.json`,
       text: json({ name, ...t, fonts: f, image: imageName ?? null, colors: c, commands: commands(t, f) }),
     },
     {
-      id: "terminal", label: "Windows Terminal", hint: "in settings.json unter „schemes“ einfügen",
-      filename: `${s}.windows-terminal.json`, text: json(terminalScheme(c, name)),
+      id: "terminal", group: "windows", label: "Windows Terminal", hint: "in settings.json unter „schemes“ einfügen",
+      filename: `${s}.windows-terminal.json`, text: json(terminalScheme(c, t, name)),
     },
     {
-      id: "terminal-font", label: "Windows Terminal: Schrift", hint: "in settings.json unter „profiles“ → „defaults“",
+      id: "terminal-font", group: "windows", label: "Windows Terminal: Schrift", hint: "in settings.json unter „profiles“ → „defaults“",
       filename: `${s}.windows-terminal-font.json`, text: json({ font: { face: f.mono, size: f.monoSize + 1 } }),
     },
     {
-      id: "fontgen", label: "fontgen-Profil", hint: "in ~/.config/fontgen/config.toml einfügen, dann fontgen use " + s,
+      id: "fontgen", group: "linux", label: "fontgen-Profil", hint: "in ~/.config/fontgen/config.toml einfügen, dann fontgen use " + s,
       filename: `${s}.fontgen.toml`, text: fontgenProfile(name, f),
     },
     {
-      id: "komorebi", label: "komorebi", hint: "als „theme“ in komorebi.json / komorebi.bar.json",
+      id: "komorebi", group: "windows", label: "komorebi", hint: "als „theme“ in komorebi.json / komorebi.bar.json",
       filename: `${s}.komorebi-theme.json`,
       text: json({
         palette: "Custom", colours: base16(c, t.mode === "dark"), single_border: "Base0D", stack_border: "Base0E",
@@ -115,8 +120,60 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
       }),
     },
     {
-      id: "css", label: "CSS-Variablen", hint: "für Webseiten, Obsidian-Snippets, Firefox userChrome",
+      id: "base16", group: "linux", label: "base16 / tinted-theming", hint: "Stylix, Neovim, tinty, VS-Code-Erweiterungen … verstehen dieses Format",
+      filename: `${s}.base16.yaml`, text: base16Yaml(name, t, c),
+    },
+    {
+      id: "pywal", group: "linux", label: "pywal (colors.json)", hint: "für alles, was pywal/wallust liest: ~/.cache/wal/colors.json",
+      filename: `${s}.pywal.json`, text: json(pywal(c, t, imageName)),
+    },
+    {
+      id: "xresources", group: "linux", label: "Xresources", hint: "für xterm, urxvt, st, rofi … (xrdb -merge)",
+      filename: `${s}.Xresources`, text: xresources(c, t, name),
+    },
+    {
+      id: "css", group: "allgemein", label: "CSS-Variablen", hint: "für Webseiten, Obsidian-Snippets, Firefox userChrome",
       filename: `${s}.css`, text: `/* ${name} – ${t.scheme}, ${t.mode} */\n:root {\n${css}\n}\n`,
     },
   ];
+}
+
+function base16Yaml(name: string, t: ThemeSettings, c: Palette): string {
+  const b = base16(c, t.mode === "dark");
+  const lines = Object.entries(b).map(([k, v]) => `  ${k.replace("base_", "base").toUpperCase().replace("BASE", "base")}: "${v}"`);
+  return `system: "base16"\nname: "${name}"\nauthor: "Theme Studio (${t.scheme}, ${t.source})"\nvariant: "${t.mode}"\npalette:\n${lines.join("\n")}\n`;
+}
+
+function pywal(c: Palette, t: ThemeSettings, image?: string) {
+  const a = ansi(c, t);
+  const all = [...a.normal, ...a.bright];
+  return {
+    wallpaper: image ?? "",
+    alpha: "100",
+    special: { background: c.background, foreground: c.on_surface, cursor: c.on_surface_variant },
+    colors: Object.fromEntries(all.map((v, i) => [`color${i}`, v])),
+  };
+}
+
+function xresources(c: Palette, t: ThemeSettings, name: string): string {
+  const a = ansi(c, t);
+  const all = [...a.normal, ...a.bright];
+  return `! ${name} – Theme Studio (${t.scheme}, ${t.mode})\n*.background: ${c.background}\n*.foreground: ${c.on_surface}\n*.cursorColor: ${c.on_surface_variant}\n` +
+    all.map((v, i) => `*.color${i}: ${v}`).join("\n") + "\n";
+}
+
+/** Exportierte Theme-Datei (.theme.json) wieder einlesen → Einstellungen, Schrift, Name. */
+export function parseThemeFile(text: string): { name: string; settings: ThemeSettings; fonts?: Fonts } {
+  const d = JSON.parse(text);
+  const hex = /^#[0-9a-f]{6}$/i;
+  if (!hex.test(d.source ?? "") || !(d.scheme in SCHEMES) || !["dark", "light"].includes(d.mode)) {
+    throw new Error("keine Theme-Studio-Datei (source/scheme/mode fehlen)");
+  }
+  const f = d.fonts;
+  const fonts = f && typeof f.mono === "string" ? {
+    ui: String(f.ui ?? DEFAULT_FONTS.ui), mono: String(f.mono), accent: String(f.accent ?? DEFAULT_FONTS.accent),
+    uiSize: Number(f.uiSize) || DEFAULT_FONTS.uiSize, monoSize: Number(f.monoSize) || DEFAULT_FONTS.monoSize,
+  } : undefined;
+  const contrast = Math.max(-1, Math.min(1, Number(d.contrast) || 0));
+  return { name: String(d.name ?? "Importiert"), settings: { source: d.source.toLowerCase(), scheme: d.scheme, mode: d.mode, contrast }, fonts };
 }
