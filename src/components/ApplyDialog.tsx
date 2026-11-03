@@ -2,12 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import { effectiveSource, SCHEMES, type ThemeSettings } from "../lib/color";
 import { FONT_PRESETS, type Fonts } from "../lib/fonts";
+import { ompTemplate, p10kOverlay, type PromptOptions } from "../lib/prompt";
 import { applyTheme, errText, imageToDisk } from "../lib/platform";
 import type { StoredImage } from "../lib/store";
 
 interface Props {
   settings: ThemeSettings;
   fonts: Fonts;
+  prompt: PromptOptions;
   image?: StoredImage;
   wallpaperDir: string;
   onClose: () => void;
@@ -15,7 +17,7 @@ interface Props {
 
 const isWindows = navigator.userAgent.includes("Windows");
 
-export function ApplyDialog({ settings, fonts, image, wallpaperDir, onClose }: Props) {
+export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onClose }: Props) {
   const [state, setState] = useState<"ready" | "running" | "done" | "error">("ready");
   const [log, setLog] = useState("");
   const [withFonts, setWithFonts] = useState(true);
@@ -39,6 +41,7 @@ export function ApplyDialog({ settings, fonts, image, wallpaperDir, onClose }: P
       const out = await applyTheme({
         image: path, source: src, scheme: settings.scheme, mode: settings.mode, contrast: settings.contrast,
         overrides, fonts: withFonts ? fonts : undefined, fontProfile: withFonts ? preset : undefined,
+        prompt: { enabled: prompt.enabled, p10k: p10kOverlay(prompt), omp: ompTemplate(prompt) },
       });
       setLog(out);
       setState("done");
@@ -61,6 +64,7 @@ export function ApplyDialog({ settings, fonts, image, wallpaperDir, onClose }: P
             <li><b>Wallpaper</b>{image ? image.name : "bleibt (aktuelles Wallpaper wird neu eingefärbt)"}</li>
             <li><b>Farben</b><span><i className="sw inline" style={{ background: src }} /> {src} · {SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"}
               {settings.contrast ? ` · Kontrast ${settings.contrast}` : ""}{Object.keys(overrides).length ? ` · ${Object.keys(overrides).length} überschrieben` : ""}</span></li>
+            <li><b>Prompt</b>{prompt.enabled ? `aus dem Studio (${prompt.style}, ${prompt.lines} Zeile${prompt.lines > 1 ? "n" : ""})` : "dein eigener (Studio-Prompt wird entfernt, falls gesetzt)"}</li>
             <li><b>Über</b>{isWindows ? "wintheme: Windows-Akzent, Terminal, VS Code, oh-my-posh, komorebi"
               : "wallthemes: alle matugen-Vorlagen + Hooks (Leiste, Terminal, GTK, VS Code …)"}</li>
           </ul>

@@ -343,3 +343,27 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 /* Kopfzeile bricht bei schmalen Fenstern um statt rauszulaufen */
 .top { flex-wrap: wrap; row-gap: 8px; }
 @media (max-width: 1300px) { .top .name { width: 160px; } .tabs-nav { margin-left: 0; } }
+
+/* Terminal-Bereich + Prompt-Assistent */
+.terminal-pane { display: grid; gap: 12px; }
+.terminal-pane .term-box { font-size: .95rem; }
+.switch { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+.switch input { appearance: none; width: 36px; height: 20px; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--fg); transition: transform .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(16px); background: var(--on-accent); }
+.prompt-summary { display: flex; gap: 6px; flex-wrap: wrap; }
+.prompt-view { display: grid; gap: 2px; }
+.pv-line { display: flex; justify-content: space-between; gap: 12px; white-space: pre; line-height: 1.55; }
+.pv-right { opacity: .95; }
+.sheet.wizard { width: min(920px, 100%); }
+.wiz-progress { height: 3px; background: var(--line); }
+.wiz-progress i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.wiz-choices { display: grid; gap: 10px; }
+.wiz-choice { display: grid; grid-template-columns: 210px 1fr; gap: 14px; align-items: center; text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.wiz-choice:hover, .wiz-choice:focus-visible { border-color: var(--accent); }
+.wiz-label { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center; }
+.wiz-label small { grid-column: 2; color: var(--muted); font-size: .78rem; }
+.wiz-term { border-radius: 8px; padding: 10px 12px; font-size: .85rem; overflow: hidden; }
+.wiz-multi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+@media (max-width: 800px) { .wiz-choice { grid-template-columns: 1fr; } .wiz-multi { grid-template-columns: 1fr 1fr; } }

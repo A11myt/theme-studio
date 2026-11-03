@@ -37,6 +37,10 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **Einstellungen** (App, ⚙): Wallpaper-Ordner (wallhaven-Bilder landen dort), Export-Ordner, „jedes Mal fragen“
 - **Sammlung**: alle Themes als Karten mit Vorschau – Favoriten ★, Suche, Sortierung (neu/Name/Farbe),
   Umbenennen (Doppelklick), Duplizieren, Löschen
+- **Terminal & Prompt-Assistent** (wie `p10k configure`): Stil lean/classic/rainbow/pure, Zeilen, Rahmen, Trenner,
+  Symbole, Prompt-Zeichen, rechte Seite, Uhrzeit, Zusammenfalten – jede Antwort mit Live-Vorschau; Schalter
+  „eigenen Prompt verwenden“. Ausgabe: Ergänzung zu `~/.p10k.zsh` (Terminalfarben-Nummern → folgt matugen) und
+  oh-my-posh-Vorlage für wintheme; „Anwenden“ setzt bzw. entfernt beides
 - **Programm-Vorschauen**: VS Code (Syntax wie die Erweiterung), Firefox, Obsidian, Discord
 - **Speichern**: Themes (Farben + Schrift) bleiben lokal (IndexedDB)
 - **Anwenden per Knopf** (App): setzt das Theme auf diesem Rechner – Linux über `wallthemes` (Wallpaper,

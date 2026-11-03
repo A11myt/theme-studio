@@ -102,6 +102,7 @@ export interface ApplyRequest {
   overrides: Record<string, string>;
   fonts?: { ui: string; mono: string; accent: string; uiSize: number; monoSize: number };
   fontProfile?: string;
+  prompt?: { enabled: boolean; p10k: string; omp: string };
 }
 
 /** Theme auf diesem Rechner anwenden (nur App) → Protokoll der aufgerufenen Programme. */

@@ -6,6 +6,7 @@ import { Desktop, type Os } from "./components/Desktop";
 import { FontPanel } from "./components/FontPanel";
 import { Library } from "./components/Library";
 import { NerdFonts } from "./components/NerdFonts";
+import { PromptWizard } from "./components/PromptWizard";
 import { Readability } from "./components/Readability";
 import { TerminalPreview } from "./components/TerminalPreview";
 import { UpdateBanner } from "./components/UpdateBanner";
@@ -15,6 +16,7 @@ import { effectiveSource, hueName, NO_TUNE, onColor, palette, SCHEMES, sourceCol
 import { grade, PARTNER, ratio } from "./lib/contrast";
 import { commands, exportsFor, parseThemeFile, renderTemplate } from "./lib/exporters";
 import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
+import { DEFAULT_PROMPT, ompTemplate, p10kOverlay, RIGHT_LABELS, type PromptOptions } from "./lib/prompt";
 import { copyText, errText, hasWallhaven, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, storeSettings, type AppSettings } from "./lib/settings";
 import { vscodeSettings, vscodeTheme, vscodeVsix } from "./lib/vscode";
@@ -28,8 +30,8 @@ const PALETTE_GROUPS: [string, string[]][] = [
   ["Text & Linien", ["on_surface", "on_surface_variant", "outline", "outline_variant", "error", "error_container"]],
 ];
 
-type Tab = "sammlung" | "farbe" | "schrift" | "vorschau" | "export";
-const TAB_IDS: Tab[] = ["sammlung", "farbe", "schrift", "vorschau", "export"];
+type Tab = "sammlung" | "farbe" | "schrift" | "terminal" | "vorschau" | "export";
+const TAB_IDS: Tab[] = ["sammlung", "farbe", "schrift", "terminal", "vorschau", "export"];
 
 export function App() {
   const [images, setImages] = useState<StoredImage[]>([]);
@@ -50,6 +52,12 @@ export function App() {
   const [showNerd, setShowNerd] = useState(false);
   const [fontsKey, setFontsKey] = useState(0);
   const [bothModes, setBothModes] = useState(false);
+  // Prompt (Assistent): gilt für den Rechner, nicht pro Theme – gemerkt im Browser-Speicher der App
+  const [prompt, setPromptState] = useState<PromptOptions>(() => {
+    try { return { ...DEFAULT_PROMPT, ...JSON.parse(localStorage.getItem("theme-studio-prompt") ?? "{}") }; } catch { return DEFAULT_PROMPT; }
+  });
+  const setPrompt = (o: PromptOptions) => { setPromptState(o); try { localStorage.setItem("theme-studio-prompt", JSON.stringify(o)); } catch { /* egal */ } };
+  const [showWizard, setShowWizard] = useState(false);
   const [tab, setTabState] = useState<Tab>(() => {
     try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }
     return "farbe";
@@ -267,7 +275,7 @@ export function App() {
     if (typing || document.querySelector(".overlay")) return;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
-    if (e.altKey && /^[1-5]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
+    if (e.altKey && /^[1-6]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
     if (mod || e.altKey) return;
     const schemes = Object.keys(SCHEMES) as SchemeName[];
     if (/^[1-9]$/.test(e.key) && tab === "farbe") update({ scheme: schemes[Number(e.key) - 1] });
@@ -282,7 +290,7 @@ export function App() {
   }, []);
 
   const importInput = useRef<HTMLInputElement>(null);
-  const TABS = [["sammlung", "Sammlung"], ["farbe", "Farbe"], ["schrift", "Schrift"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
+  const TABS = [["sammlung", "Sammlung"], ["farbe", "Farbe"], ["schrift", "Schrift"], ["terminal", "Terminal"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
   const bg = image ? urls[image.id] : undefined;
 
   return (
@@ -413,8 +421,53 @@ export function App() {
           <aside className="card mini-preview">
             <h3>So sieht es aus</h3>
             <Desktop c={pal} os={os} image={bg} size="large" fonts={fonts} />
-            <TerminalPreview c={pal} t={settings} fonts={fonts} />
+            <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
           </aside>
+          <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("terminal")}>Weiter: Terminal →</button></div>
+        </div>)}
+        {tab === "terminal" && (<div className="pane" role="tabpanel">
+          <section className="card terminal-pane">
+            <div className="detail-head">
+              <h2>Prompt</h2>
+              <label className="switch">
+                <input type="checkbox" role="switch" checked={prompt.enabled} onChange={(e) => setPrompt({ ...prompt, enabled: e.target.checked })} />
+                <span>Eigenen Prompt aus dem Studio verwenden</span>
+              </label>
+              <span className="grow" />
+              <button type="button" className="primary" onClick={() => setShowWizard(true)}>Prompt-Assistent …</button>
+            </div>
+            <p className="empty">{prompt.enabled
+              ? "Beim „Anwenden“ wird dieser Prompt gesetzt – Linux als Ergänzung zu ~/.p10k.zsh, Windows als oh-my-posh-Vorlage für wintheme. Farben folgen dem Wallpaper."
+              : "Aus: dein bisheriger Prompt bleibt. Beim „Anwenden“ wird ein früher gesetzter Studio-Prompt wieder entfernt."}</p>
+            <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
+            {prompt.enabled && (
+              <div className="prompt-summary">
+                <span className="chip">{{ lean: "Lean", classic: "Classic", rainbow: "Rainbow", pure: "Pure" }[prompt.style]}</span>
+                <span className="chip">{prompt.lines} Zeile{prompt.lines > 1 ? "n" : ""}{prompt.lines === 2 && prompt.frame ? " mit Rahmen" : ""}</span>
+                <span className="chip">Symbole {prompt.icons ? "an" : "aus"}</span>
+                <span className="chip">Zeichen {prompt.char}</span>
+                <span className="chip">rechts: {prompt.right.map((r) => RIGHT_LABELS[r]).join(", ") || "nichts"}</span>
+                <span className="chip">{prompt.transient ? "zusammenfalten" : "nicht zusammenfalten"}</span>
+              </div>
+            )}
+          </section>
+          {prompt.enabled && (
+            <section className="card export">
+              <h2>Prompt-Dateien</h2>
+              <ul className="files">
+                <li>
+                  <span><b>powerlevel10k (Linux)</b><small>nach ~/.config/theme-studio/p10k.zsh – deine .zshrc lädt sie nach ~/.p10k.zsh</small></span>
+                  <button type="button" className="ghost" onClick={() => copy(p10kOverlay(prompt))}>Kopieren</button>
+                  <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>Speichern</button>
+                </li>
+                <li>
+                  <span><b>oh-my-posh-Vorlage (Windows)</b><small>nach %APPDATA%\wintheme\ohmyposh.studio.json – wintheme färbt sie ein</small></span>
+                  <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>Kopieren</button>
+                  <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>Speichern</button>
+                </li>
+              </ul>
+            </section>
+          )}
           <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("vorschau")}>Weiter: Vorschau →</button></div>
         </div>)}
         {tab === "vorschau" && (<div className="pane" role="tabpanel">
@@ -437,7 +490,7 @@ export function App() {
             </div>
           )}
           <div className="split">
-            <TerminalPreview c={pal} t={settings} fonts={fonts} />
+            <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
             <Readability c={pal} />
           </div>
           <h3>Programme</h3>
@@ -558,7 +611,9 @@ export function App() {
 
       {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} initialColor={wallhaven.color}
         themeColors={[effSource, ...(image?.sources ?? [])]} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
-      {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
+      {showWizard && <PromptWizard value={prompt} c={pal} fonts={fonts} onClose={() => setShowWizard(false)}
+        onDone={(o) => { setPrompt(o); flash("Prompt übernommen"); }} />}
+      {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
       {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
         onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(`${fam} Nerd Font installiert`, 3000); }} />}
       {showSettings && <SettingsDialog value={app} onClose={() => setShowSettings(false)}

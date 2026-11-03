@@ -30,6 +30,28 @@ pub struct ApplyRequest {
     overrides: BTreeMap<String, String>, // rolle → #rrggbb
     fonts: Option<Fonts>,
     font_profile: Option<String>,        // vorhandenes fontgen-Profil (iosevka/hack/jetbrains) oder None
+    prompt: Option<Prompt>,              // Prompt aus dem Assistenten; None = nichts ändern
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Prompt {
+    enabled: bool,                       // aus = Studio-Prompt entfernen (eigener Prompt wieder aktiv)
+    p10k: String,                        // Ergänzung zu ~/.p10k.zsh (Linux)
+    omp: String,                         // oh-my-posh-Vorlage mit Farb-Platzhaltern (Windows)
+}
+
+/// Prompt-Datei schreiben (an) oder entfernen (aus).
+fn write_prompt(path: PathBuf, enabled: bool, content: &str, what: &str, log: &mut Vec<String>) {
+    let r = if enabled {
+        path.parent().map(std::fs::create_dir_all).transpose().and_then(|_| std::fs::write(&path, content))
+    } else {
+        match std::fs::remove_file(&path) { Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()), r => r }
+    };
+    match r {
+        Ok(_) => log.push(format!("✓ {what}: {}", if enabled { "aus Theme Studio" } else { "wieder dein eigener" })),
+        Err(e) => log.push(format!("✗ {what}: {e}")),
+    }
 }
 
 fn is_hex(s: &str) -> bool {
@@ -57,6 +79,10 @@ fn validate(r: &ApplyRequest) -> Result<(), String> {
     }
     if let Some(img) = &r.image {
         if !PathBuf::from(img).is_file() { return Err(format!("Bild nicht gefunden: {img}")); }
+    }
+    if let Some(p) = &r.prompt {
+        if p.p10k.len() > 64_000 || p.omp.len() > 64_000 { return Err("Prompt zu groß".into()); }
+        if serde_json::from_str::<serde_json::Value>(&p.omp).is_err() { return Err("oh-my-posh-Vorlage ist kein JSON".into()); }
     }
     Ok(())
 }
@@ -100,6 +126,10 @@ pub async fn apply_theme(req: ApplyRequest) -> Result<String, String> {
 #[cfg(not(target_os = "windows"))]
 fn apply_blocking(r: ApplyRequest) -> Result<String, String> {
     let mut log = Vec::new();
+    if let Some(p) = &r.prompt {
+        let home = PathBuf::from(std::env::var("HOME").unwrap_or_default());
+        write_prompt(home.join(".config/theme-studio/p10k.zsh"), p.enabled, &p.p10k, "Prompt (p10k, neue Terminals)", &mut log);
+    }
     let mut c = Command::new(tool("wallthemes"));
     if let Some(img) = &r.image { c.arg(img); }
     c.args(["--color", &r.source, "--scheme", &r.scheme, "--mode", &r.mode, "--contrast", &r.contrast.to_string()]);
@@ -126,6 +156,10 @@ fn apply_blocking(r: ApplyRequest) -> Result<String, String> {
     if !py.is_file() || !script.is_file() {
         return Err("wintheme ist nicht installiert – in dotfiles-windows: .\\install.ps1".into());
     }
+    if let Some(p) = &r.prompt {
+        let appdata = PathBuf::from(std::env::var("APPDATA").map_err(|e| e.to_string())?);
+        write_prompt(appdata.join("wintheme").join("ohmyposh.studio.json"), p.enabled, &p.omp, "Prompt (oh-my-posh)", &mut log);
+    }
     let mut c = Command::new(py);
     c.arg(script);
     if let Some(img) = &r.image { c.arg(img); }
@@ -142,7 +176,7 @@ mod tests {
     use super::*;
     fn req() -> ApplyRequest {
         ApplyRequest { image: None, source: "#db79a9".into(), scheme: "vibrant".into(), mode: "dark".into(), contrast: 0.0,
-            overrides: BTreeMap::new(), fonts: None, font_profile: None }
+            overrides: BTreeMap::new(), fonts: None, font_profile: None, prompt: None }
     }
     #[test]
     fn pruefung() {
