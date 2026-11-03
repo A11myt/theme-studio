@@ -14,11 +14,12 @@ interface Props {
   onUpdate: (t: StoredTheme) => void;
   onDuplicate: (t: StoredTheme) => void;
   onDelete: (id: string) => void;
+  onShare: (t: StoredTheme) => void;
 }
 
 type Sort = "neu" | "name" | "farbe";
 
-export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, onDelete }: Props) {
+export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, onDelete, onShare }: Props) {
   const [q, setQ] = useState("");
   const [favOnly, setFavOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("neu");
@@ -89,6 +90,7 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
                 <button type="button" className="primary" onClick={() => onOpen(t)}>Öffnen</button>
                 <button type="button" className="ghost" onClick={() => setRenaming(t.id)}>Umbenennen</button>
                 <button type="button" className="ghost" onClick={() => onDuplicate(t)}>Duplizieren</button>
+                <button type="button" className="ghost" onClick={() => onShare(t)} title="Link mit diesem Theme kopieren">Link</button>
                 <span className="grow" />
                 {confirmDel === t.id
                   ? <button type="button" className="ghost danger" onClick={() => { onDelete(t.id); setConfirmDel(undefined); }}>Löschen?</button>

@@ -5,7 +5,7 @@ import { vscodeTheme } from "../lib/vscode";
 import type { Studio } from "../useStudio";
 
 export function ExportPane({ s }: { s: Studio }) {
-  const { templates, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings } = s;
+  const { templates, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, shareTheme } = s;
   return (
     <div className="pane" role="tabpanel">
         <section className="card summary">
@@ -14,6 +14,7 @@ export function ExportPane({ s }: { s: Studio }) {
           <span className="grow" />
           <button type="button" className="ghost" onClick={() => setTab("farbe")}>Farbe ändern</button>
           <button type="button" className="ghost" onClick={() => setTab("schrift")}>Schrift ändern</button>
+          <button type="button" className="ghost" onClick={() => shareTheme(themeName, settings, fonts)} title="Link mit diesem Theme kopieren">Link teilen</button>
           {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>Anwenden</button>}
         </section>
         <section className="card export" id="export">

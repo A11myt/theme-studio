@@ -7,6 +7,7 @@ import { DEFAULT_PROMPT, type PromptOptions } from "./lib/prompt";
 import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, type AppSettings } from "./lib/settings";
 import { vscodeSettings, vscodeVsix } from "./lib/vscode";
+import { readShareLink, shareLink } from "./lib/share";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
 
 
@@ -86,6 +87,9 @@ export function useStudio() {
 
   useEffect(() => { void loadSettings().then(setApp); }, []);
 
+  // Mit einem Theme-Link gestartet? Dann nicht das erste Bild auswählen (würde die Link-Farben überschreiben)
+  const openedFromLink = useRef(typeof location !== "undefined" && location.hash.startsWith("#t="));
+
   // Laden aus IndexedDB
   useEffect(() => {
     void Promise.all([db.images(), db.themes(), db.templates()]).then(([i, t, tp]) => {
@@ -93,7 +97,7 @@ export function useStudio() {
       setImages(i);
       setThemes(t.sort((a, b) => b.created - a.created));
       setTemplates(tp.sort((a, b) => a.name.localeCompare(b.name)));
-      if (i[0]) selectImage(i[0]);
+      if (i[0] && !openedFromLink.current) selectImage(i[0]);   // ein geöffneter Link hat Vorrang
     });
   }, []);
 
@@ -226,6 +230,46 @@ export function useStudio() {
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Geteiltes Theme übernehmen (Link aus der Adresse oder eingefügt)
+  const openShared = (text: string) => {
+    try {
+      const t = readShareLink(text);
+      if (!t) return false;
+      setSettings(t.settings);
+      if (t.fonts) setFonts(t.fonts);
+      setName(t.name);
+      setImageId(undefined);
+      setTab("farbe");
+      flash(`Geteiltes Theme „${t.name}“ geöffnet`, 3000);
+    } catch (e) {
+      flash(`Link ungültig: ${errText(e)}`, 5000);
+    }
+    return true;
+  };
+  useEffect(() => {
+    if (location.hash.startsWith("#t=")) {
+      openShared(location.hash);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    // Strg+V mit einem Theme-Link (nicht in Eingabefeldern)
+    const paste = (e: ClipboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const text = e.clipboardData?.getData("text") ?? "";
+      if (text.includes("#t=") && openShared(text)) e.preventDefault();
+    };
+    window.addEventListener("paste", paste);
+    return () => window.removeEventListener("paste", paste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const shareTheme = async (n: string, st: ThemeSettings, f: Fonts) => {
+    try {
+      await copyText(shareLink(n, st, f));
+      flash("Link kopiert – wer ihn öffnet, sieht genau dieses Theme (ohne Bild)", 3500);
+    } catch {
+      flash("Kopieren nicht möglich");
+    }
+  };
+
   const copy = async (text: string) => {
     try {
       await copyText(text);
@@ -356,6 +400,7 @@ export function useStudio() {
     addTemplates,
     deleteTemplate,
     copy,
+    shareTheme,
     saveOpts,
     report,
     saveFile,
