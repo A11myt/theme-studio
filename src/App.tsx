@@ -170,9 +170,9 @@ export function App() {
             </div>
             <code className="hex">{settings.source}</code>
             {image && <small className="engine" title={image.engine === "matugen"
-              ? "Ausgangsfarben von matugen – exakt wie dein System"
-              : "Ausgangsfarben im Browser berechnet – können leicht von matugen abweichen"}>
-              {image.engine === "matugen" ? "· erkannt mit matugen" : "· im Browser erkannt"}</small>}
+              ? "Mit matugens eigenem Rust-Code berechnet – exakt wie dein System"
+              : "Näherung im Browser – kann leicht von matugen abweichen"}>
+              {image.engine === "matugen" ? "· exakt wie matugen" : "· Näherung"}</small>}
 
             <h2>Modus</h2>
             <div className="seg">

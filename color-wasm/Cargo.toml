@@ -1,0 +1,27 @@
+[package]
+name = "studio-color"
+version = "0.1.0"
+edition = "2021"
+description = "Ausgangsfarben eines Bildes – exakt wie matugen 4.2 (material-colors 0.4.2)"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+material-colors = { version = "=0.4.2", features = ["image"] }
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+
+
+# ahash (in material-colors) braucht Zufall → im Browser über crypto.getRandomValues
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+# material-colors 0.4.2 wie matugen, nur die Debug-Zeitmessung unter WebAssembly ausgeklammert
+# (std::time::Instant gibt es dort nicht) – siehe vendor/material-colors/src/quantize/quantizer_wsmeans.rs
+[patch.crates-io]
+material-colors = { path = "vendor/material-colors" }

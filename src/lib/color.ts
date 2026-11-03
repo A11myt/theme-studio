@@ -79,21 +79,23 @@ export function argbFromHex(hex: string): number {
 
 export type Engine = "matugen" | "browser";
 
-/** Bis zu 4 Ausgangsfarben: per matugen (lokaler Server, exakt wie das System), sonst im Browser. */
+let wasm: Promise<typeof import("../wasm/studio_color")> | undefined;
+const loadWasm = () => (wasm ??= import("../wasm/studio_color").then(async (m) => { await m.default(); return m; }));
+
+/** Bis zu 4 Ausgangsfarben – per WebAssembly mit matugens eigenem Rust-Code (exakt gleich),
+ *  Rückfall: Näherung im Browser. */
 export async function sourceColors(blob: Blob): Promise<{ colors: string[]; engine: Engine }> {
   try {
-    const r = await fetch("/api/source-colors", { method: "POST", body: blob });
-    if (r.ok) {
-      const d = await r.json();
-      if (Array.isArray(d.colors) && d.colors.length) return { colors: d.colors, engine: "matugen" };
-    }
-  } catch {
-    /* kein Server/matugen → Browser */
+    const m = await loadWasm();
+    const colors = m.sourceColors(new Uint8Array(await blob.arrayBuffer()));
+    if (colors.length) return { colors, engine: "matugen" };
+  } catch (e) {
+    console.warn("WebAssembly nicht verfügbar – rechne im Browser", e);
   }
   return { colors: await browserSourceColors(blob), engine: "browser" };
 }
 
-/** Im Browser: wie matugen/Pillow auf 112×112 verkleinern, Celebi-Quantisierung (128), Score. */
+/** Näherung ohne WebAssembly: wie matugen auf 112×112 verkleinern (Dreiecksfilter), Celebi-Quantisierung (128), Score. */
 export async function browserSourceColors(blob: Blob): Promise<string[]> {
   const bmp = await createImageBitmap(blob);
   const { width: w, height: h } = bmp;
