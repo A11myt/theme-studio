@@ -68,3 +68,7 @@ Pakete (.deb/.rpm/AppImage): `pnpm tauri build`.
 **Windows-Installer** baut GitHub Actions (`.github/workflows/build.yml`) bei jedem Push:
 Actions → letzter Lauf → Artefakt `theme-studio-windows` (`.exe` bzw. `.msi`). Ein Tag `v*` legt zusätzlich
 einen Release-Entwurf mit allen Installern an.
+
+## Lizenz
+
+MIT – siehe `LICENSE`. `color-wasm/vendor/material-colors` steht unter MIT oder Apache-2.0 (Lizenzdateien dort).

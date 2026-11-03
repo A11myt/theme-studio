@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Themes aus eigenen Bildern bauen, vergleichen und für Linux (matugen) und Windows (wintheme) exportieren",
+  "description": "Themes aus eigenen Bildern bauen, vergleichen und f\u00fcr Linux (matugen) und Windows (wintheme) exportieren",
   "scripts": {
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
@@ -33,5 +33,6 @@
     "@vitejs/plugin-react": "4.6.0",
     "typescript": "5.8.3",
     "vite": "7.0.4"
-  }
+  },
+  "license": "MIT"
 }
