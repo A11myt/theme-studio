@@ -9,6 +9,8 @@ const wallhaven = {
 };
 
 export default defineConfig({
+  // GitHub Pages liegt unter /theme-studio/ – sonst (App, lokal) an der Wurzel
+  base: process.env.VITE_BASE ?? "/",
   plugins: [react()],
   clearScreen: false,
   server: { port: 5173, strictPort: true, proxy: wallhaven },

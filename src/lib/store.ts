@@ -18,6 +18,7 @@ export interface StoredTheme {
   imageId?: string;       // Bild, aus dem das Theme entstand (optional: auch reine Farbe möglich)
   settings: ThemeSettings;
   fonts?: Fonts;          // fehlt bei älteren Themes → Standard
+  favorite?: boolean;
   created: number;
 }
 

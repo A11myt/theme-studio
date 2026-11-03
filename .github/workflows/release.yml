@@ -1,0 +1,70 @@
+# Release bei einer Versionsmarke (git tag v0.2.0 && git push --tags):
+# baut Windows (NSIS) und Linux (AppImage/deb), signiert die Updates und veröffentlicht ein Release
+# mit latest.json – daraus holt die installierte App ihre Updates.
+# Braucht das Repository-Geheimnis TAURI_SIGNING_PRIVATE_KEY (privater Schlüssel aus ~/.tauri/theme-studio.key).
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: --bundles nsis
+          - os: ubuntu-22.04
+            args: --bundles appimage,deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux-Pakete für Tauri
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Theme Studio ${{ github.ref_name }}
+          releaseBody: |
+            Windows: `Theme Studio_*_x64-setup.exe` (aktualisiert sich selbst) oder `…-portable.exe` (ohne Installation).
+            Im Browser: https://a11myt.github.io/theme-studio/
+            Linux: AppImage (aktualisiert sich selbst) oder .deb.
+            Bereits installiert? Die App meldet das Update von selbst.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }} --config {"bundle":{"createUpdaterArtifacts":true}}
+
+      # Windows ohne Installation: das Programm selbst als einzelne .exe (WebView2 bringt Windows 11 mit)
+      - name: Portable .exe ans Release hängen
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp src-tauri/target/release/theme-studio.exe "Theme-Studio-${GITHUB_REF_NAME}-portable.exe"
+          gh release upload "$GITHUB_REF_NAME" "Theme-Studio-${GITHUB_REF_NAME}-portable.exe" --clobber

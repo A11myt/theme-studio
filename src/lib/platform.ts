@@ -1,6 +1,9 @@
 // Browser oder Tauri-App? In der App laufen Netz, Speichern und Zwischenablage über Tauri-Plugins.
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+/** wallhaven geht in der App und lokal (pnpm dev/preview leiten weiter) – nicht auf der Webseite (CORS). */
+export const hasWallhaven = isTauri || ["localhost", "127.0.0.1"].includes(location.hostname);
+
 /** fetch: in der App direkt (keine CORS-Grenze), im Browser über die Weiterleitung des Entwicklungsservers. */
 export async function netFetch(url: string): Promise<Response> {
   if (isTauri) {
@@ -111,4 +114,27 @@ export async function applyTheme(req: ApplyRequest): Promise<string> {
 export async function imageToDisk(blob: Blob, name: string, dir: string): Promise<string> {
   const safe = name.replace(/[^\p{L}\p{N}\-_. ()]/gu, "-").replace(/^\.+/, "") || "bild.jpg";
   return (await saveBytes(safe, new Uint8Array(await blob.arrayBuffer()), { dir }))!;
+}
+
+/** Automatische Updates (Windows-Installer bzw. AppImage): neue Version auf GitHub? */
+// Windows-Installer aktualisiert sich selbst; unter Linux baust du lokal (bzw. AppImage manuell)
+export const canUpdate = isTauri && navigator.userAgent.includes("Windows");
+
+export async function checkUpdate(): Promise<{ version: string; notes?: string; install: (progress: (p: number) => void) => Promise<void> } | null> {
+  const { check } = await import("@tauri-apps/plugin-updater");
+  const u = await check();
+  if (!u) return null;
+  return {
+    version: u.version,
+    notes: u.body,
+    install: async (progress) => {
+      let total = 0, done = 0;
+      await u.downloadAndInstall((e) => {
+        if (e.event === "Started") total = e.data.contentLength ?? 0;
+        if (e.event === "Progress") { done += e.data.chunkLength; if (total) progress(done / total); }
+      });
+      const { relaunch } = await import("@tauri-apps/plugin-process");
+      await relaunch();
+    },
+  };
 }

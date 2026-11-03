@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { AppPreviews } from "./components/AppPreviews";
 import { ApplyDialog } from "./components/ApplyDialog";
+import { Collection } from "./components/Collection";
 import { Desktop, type Os } from "./components/Desktop";
 import { FontPanel } from "./components/FontPanel";
 import { Library } from "./components/Library";
 import { NerdFonts } from "./components/NerdFonts";
 import { Readability } from "./components/Readability";
 import { TerminalPreview } from "./components/TerminalPreview";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { Wallhaven } from "./components/Wallhaven";
 import { effectiveSource, hueName, NO_TUNE, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
 import { grade, PARTNER, ratio } from "./lib/contrast";
 import { commands, exportsFor, parseThemeFile, renderTemplate } from "./lib/exporters";
 import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
-import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
+import { copyText, errText, hasWallhaven, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, storeSettings, type AppSettings } from "./lib/settings";
 import { vscodeSettings, vscodeTheme, vscodeVsix } from "./lib/vscode";
 import { nearestWallhavenColor } from "./lib/wallhaven";
@@ -25,8 +28,8 @@ const PALETTE_GROUPS: [string, string[]][] = [
   ["Text & Linien", ["on_surface", "on_surface_variant", "outline", "outline_variant", "error", "error_container"]],
 ];
 
-type Tab = "farbe" | "schrift" | "vorschau" | "export";
-const TAB_IDS: Tab[] = ["farbe", "schrift", "vorschau", "export"];
+type Tab = "sammlung" | "farbe" | "schrift" | "vorschau" | "export";
+const TAB_IDS: Tab[] = ["sammlung", "farbe", "schrift", "vorschau", "export"];
 
 export function App() {
   const [images, setImages] = useState<StoredImage[]>([]);
@@ -163,6 +166,18 @@ export function App() {
     setImageId(t.imageId && images.some((i) => i.id === t.imageId) ? t.imageId : undefined);
   };
 
+  const updateTheme = async (t: StoredTheme) => {
+    await db.putTheme(t);
+    setThemes((prev) => prev.map((x) => (x.id === t.id ? t : x)));
+  };
+
+  const duplicateTheme = async (t: StoredTheme) => {
+    const copy: StoredTheme = { ...t, id: uid(), name: `${t.name} (Kopie)`, favorite: false, created: Date.now() };
+    await db.putTheme(copy);
+    setThemes((prev) => [copy, ...prev]);
+    flash(`„${copy.name}“ angelegt`);
+  };
+
   const deleteTheme = async (id: string) => {
     await db.deleteTheme(id);
     setThemes((prev) => prev.filter((t) => t.id !== id));
@@ -252,7 +267,7 @@ export function App() {
     if (typing || document.querySelector(".overlay")) return;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
-    if (e.altKey && /^[1-4]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
+    if (e.altKey && /^[1-5]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
     if (mod || e.altKey) return;
     const schemes = Object.keys(SCHEMES) as SchemeName[];
     if (/^[1-9]$/.test(e.key) && tab === "farbe") update({ scheme: schemes[Number(e.key) - 1] });
@@ -267,7 +282,7 @@ export function App() {
   }, []);
 
   const importInput = useRef<HTMLInputElement>(null);
-  const TABS = [["farbe", "Farbe"], ["schrift", "Schrift"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
+  const TABS = [["sammlung", "Sammlung"], ["farbe", "Farbe"], ["schrift", "Schrift"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
   const bg = image ? urls[image.id] : undefined;
 
   return (
@@ -305,14 +320,19 @@ export function App() {
         onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />
 
       <main className="main">
+        <UpdateBanner />
+        {tab === "sammlung" && (<div className="pane" role="tabpanel">
+          <Collection themes={themes} urls={urls} os={os} onUpdate={updateTheme} onDuplicate={duplicateTheme} onDelete={deleteTheme}
+            onOpen={(t) => { openTheme(t); setTab("farbe"); }} />
+        </div>)}
         {tab === "farbe" && (<div className="pane" role="tabpanel">
         <section className="card setup" id="farbe">
           <div className="hero">
             {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">Kein Bild – nur Farbe</div>}
-            <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
+            {hasWallhaven && <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
               title="wallhaven nach Bildern in der Ausgangsfarbe durchsuchen">
               <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} /> Passende Wallpaper suchen
-            </button>
+            </button>}
           </div>
           <div className="controls">
             <h2>Ausgangsfarbe</h2>
@@ -420,6 +440,8 @@ export function App() {
             <TerminalPreview c={pal} t={settings} fonts={fonts} />
             <Readability c={pal} />
           </div>
+          <h3>Programme</h3>
+          <AppPreviews c={pal} fonts={fonts} />
           {editRole && (() => {
             const cur = (pal as Record<string, string>)[editRole];
             const orig = (palette({ ...settings, overrides: undefined }) as Record<string, string>)[editRole];

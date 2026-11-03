@@ -1,6 +1,6 @@
 [package]
 name = "theme-studio"
-version = "0.1.0"
+version = "0.2.0"
 description = "Theme Studio – Themes aus Bildern für matugen und wintheme"
 authors = ["A11myt"]
 license = "MIT"
@@ -26,6 +26,8 @@ tauri-plugin-log = "2"
 tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]

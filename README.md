@@ -3,6 +3,10 @@
 Themes aus eigenen Bildern bauen, alle Material-You-Varianten nebeneinander vergleichen und für
 **Linux (matugen)** und **Windows (wintheme)** übernehmen. Läuft lokal im Browser, alles bleibt auf dem Rechner.
 
+**Ohne Installation:** im Browser unter **https://a11myt.github.io/theme-studio/** (Anwenden, Nerd Fonts und
+wallhaven nur in der App) · Windows: `…-portable.exe` aus den [Releases](https://github.com/A11myt/theme-studio/releases)
+· Linux: AppImage. **Installiert:** Windows-Setup aus den Releases – aktualisiert sich dann selbst.
+
 ```bash
 pnpm install
 pnpm dev          # im Browser → http://localhost:5173
@@ -31,6 +35,9 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **VS Code**: installierbare Erweiterung (`.vsix`, Oberfläche wie deine matugen-Vorlage + Syntaxfarben),
   `settings.json`-Auszug (Theme + Schrift), Theme-Datei
 - **Einstellungen** (App, ⚙): Wallpaper-Ordner (wallhaven-Bilder landen dort), Export-Ordner, „jedes Mal fragen“
+- **Sammlung**: alle Themes als Karten mit Vorschau – Favoriten ★, Suche, Sortierung (neu/Name/Farbe),
+  Umbenennen (Doppelklick), Duplizieren, Löschen
+- **Programm-Vorschauen**: VS Code (Syntax wie die Erweiterung), Firefox, Obsidian, Discord
 - **Speichern**: Themes (Farben + Schrift) bleiben lokal (IndexedDB)
 - **Anwenden per Knopf** (App): setzt das Theme auf diesem Rechner – Linux über `wallthemes` (Wallpaper,
   alle matugen-Vorlagen, Hooks) und `fontgen`, Windows über `wintheme` (inkl. Terminal-Schrift)
@@ -81,6 +88,14 @@ Pakete (.deb/.rpm/AppImage): `pnpm tauri build`.
 **Windows-Installer** baut GitHub Actions (`.github/workflows/build.yml`) bei jedem Push:
 Actions → letzter Lauf → Artefakt `theme-studio-windows` (`.exe` bzw. `.msi`). Ein Tag `v*` legt zusätzlich
 einen Release-Entwurf mit allen Installern an.
+
+## Releases & Updates
+
+`git tag v0.2.0 && git push --tags` → `.github/workflows/release.yml` baut Windows (Setup + portable .exe) und Linux
+(AppImage, .deb), signiert die Updates und veröffentlicht das Release samt `latest.json`. Die installierte
+Windows-App prüft beim Start dort und bietet „Jetzt aktualisieren“ an.
+Signatur: privater Schlüssel `~/.tauri/theme-studio.key` (nie ins Repo, **sichern!** – ohne ihn keine Updates mehr),
+als Repository-Geheimnis `TAURI_SIGNING_PRIVATE_KEY`; der öffentliche steht in `src-tauri/tauri.conf.json`.
 
 ## Lizenz
 

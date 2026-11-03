@@ -1,5 +1,6 @@
 // Seitenleiste: Bilder hochladen/auswählen, gespeicherte Themes, matugen-Vorlagen.
 import { useRef, useState, type DragEvent } from "react";
+import { hasWallhaven } from "../lib/platform";
 import type { StoredImage, StoredTemplate, StoredTheme } from "../lib/store";
 
 interface Props {
@@ -44,7 +45,9 @@ export function Library(p: Props) {
           onDragLeave={() => setDrag(false)} onDrop={drop}>
           {p.busy ? "Farben werden berechnet …" : <>Bilder hierher ziehen<br /><small>oder klicken · Vorlagen auch</small></>}
         </button>
-        <button type="button" className="ghost wide" onClick={p.onWallhaven}>Auf wallhaven suchen</button>
+        {hasWallhaven
+          ? <button type="button" className="ghost wide" onClick={p.onWallhaven}>Auf wallhaven suchen</button>
+          : <p className="empty">wallhaven-Suche gibt es in der App (oder lokal mit <code>pnpm dev</code>).</p>}
         <input ref={imgInput} type="file" accept="image/*" multiple hidden
           onChange={(e) => { p.onAddImages([...(e.target.files ?? [])]); e.target.value = ""; }} />
         {p.images.length === 0 && <p className="empty">Noch keine Bilder. Wallpaper hochladen, um Themes daraus zu bauen.</p>}

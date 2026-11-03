@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Theme Studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "de.a11myt.themestudio",
   "build": {
     "frontendDist": "../dist",
@@ -38,8 +38,19 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "Themes aus Bildern bauen \u2013 f\u00fcr matugen und wintheme",
+    "shortDescription": "Themes aus Bildern bauen – für matugen und wintheme",
     "category": "GraphicsAndDesign"
   },
-  "mainBinaryName": "theme-studio"
+  "mainBinaryName": "theme-studio",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA3ODcxODBGN0VCMTQ0MEMKUldRTVJMRitEeGlIQjZqQWNkNVB2NDFjYVc3NEFDT3JyeE5HQVZYdGVGQ3FSSEpEVGp5MkgwYXYK",
+      "endpoints": [
+        "https://github.com/A11myt/theme-studio/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }
