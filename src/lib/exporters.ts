@@ -52,7 +52,7 @@ export function renderTemplate(text: string, t: ThemeSettings, imageName = "", f
     .replace(/\{\{\s*image\s*\}\}/g, imageName);
 }
 
-function terminalScheme(c: Palette, t: ThemeSettings, name: string) {
+export function terminalScheme(c: Palette, t: ThemeSettings, name: string) {
   const a = ansi(c, t);
   const keys = ["black", "red", "green", "yellow", "blue", "purple", "cyan", "white"];
   const cap = (k: string) => k[0].toUpperCase() + k.slice(1);
@@ -65,7 +65,7 @@ function terminalScheme(c: Palette, t: ThemeSettings, name: string) {
   };
 }
 
-function base16(c: Palette, dark: boolean) {
+export function base16(c: Palette, dark: boolean) {
   return {
     base_00: c.surface, base_01: c.surface_container_low, base_02: c.surface_container_high,
     base_03: c.outline_variant, base_04: c.outline, base_05: c.on_surface,

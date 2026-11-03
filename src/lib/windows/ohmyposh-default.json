@@ -1,0 +1,106 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "version": 3,
+  "final_space": true,
+  "console_title_template": "{{ .Folder }}",
+  "blocks": [
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "foreground": "{{colors.outline_variant.default.hex}}",
+          "template": "╭─"
+        },
+        {
+          "type": "path",
+          "style": "plain",
+          "foreground": "{{colors.primary.default.hex}}",
+          "template": " {{ .Path }}",
+          "properties": {
+            "style": "unique",
+            "max_depth": 4,
+            "folder_separator_icon": "/",
+            "home_icon": "~"
+          }
+        },
+        {
+          "type": "git",
+          "style": "plain",
+          "foreground": "{{colors.secondary.default.hex}}",
+          "foreground_templates": [
+            "{{ if or (.Working.Changed) (.Staging.Changed) }}{{colors.tertiary.default.hex}}{{ end }}"
+          ],
+          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Staging.Changed }} +{{ .Staging.Added }}{{ end }}{{ if .Working.Changed }} !{{ .Working.Modified }}{{ end }}{{ if gt .Working.Untracked 0 }} ?{{ .Working.Untracked }}{{ end }}",
+          "properties": {
+            "fetch_status": true,
+            "fetch_upstream_icon": false,
+            "branch_icon": " "
+          }
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "right",
+      "segments": [
+        {
+          "type": "status",
+          "style": "plain",
+          "foreground": "{{colors.error.default.hex}}",
+          "template": "{{ if gt .Code 0 }}✘ {{ .Code }} {{ end }}"
+        },
+        {
+          "type": "executiontime",
+          "style": "plain",
+          "foreground": "{{colors.outline.default.hex}}",
+          "template": "{{ .FormattedMs }} ",
+          "properties": {
+            "threshold": 3000,
+            "style": "austin"
+          }
+        },
+        {
+          "type": "time",
+          "style": "plain",
+          "foreground": "{{colors.outline_variant.default.hex}}",
+          "template": "{{ .CurrentDate | date \"15:04:05\" }}"
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "foreground": "{{colors.outline_variant.default.hex}}",
+          "template": "╰─"
+        },
+        {
+          "type": "status",
+          "style": "plain",
+          "foreground": "{{colors.primary.default.hex}}",
+          "foreground_templates": [
+            "{{ if gt .Code 0 }}{{colors.error.default.hex}}{{ end }}"
+          ],
+          "template": "❯",
+          "properties": {
+            "always_enabled": true
+          }
+        }
+      ]
+    }
+  ],
+  "transient_prompt": {
+    "foreground": "{{colors.primary.default.hex}}",
+    "foreground_templates": [
+      "{{ if gt .Code 0 }}{{colors.error.default.hex}}{{ end }}"
+    ],
+    "template": "❯ "
+  }
+}

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { ApplyDialog } from "./components/ApplyDialog";
+import { WindowsApply } from "./components/WindowsApply";
 import { Library } from "./components/Library";
 import { NerdFonts } from "./components/NerdFonts";
 import { PromptWizard } from "./components/PromptWizard";
@@ -20,7 +21,7 @@ import { t, useLang } from "./lib/i18n";
 export function App() {
   useLang();                       // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys } = s;
+  const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName } = s;
 
   return (
     <div className="app" style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
@@ -81,7 +82,9 @@ export function App() {
         themeColors={[effSource, ...(image?.sources ?? [])]} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
       {showWizard && <PromptWizard value={prompt} c={pal} fonts={fonts} onClose={() => setShowWizard(false)}
         onDone={(o) => { setPrompt(o); flash(t("Prompt übernommen")); }} />}
-      {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
+      {showApply && (navigator.userAgent.includes("Windows")
+        ? <WindowsApply name={themeName} settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />
+        : <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />)}
       {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
         onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(t("{fam} Nerd Font installiert", { fam }), 3000); }} />}
       {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys} onClose={() => setShowSettings(false)}

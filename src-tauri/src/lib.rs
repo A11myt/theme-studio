@@ -1,4 +1,5 @@
 mod apply;
+mod winapply;
 mod files;
 mod nerdfonts;
 
@@ -44,7 +45,10 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![list_fonts, nerdfonts::nerd_fonts_list, nerdfonts::nerd_font_install,
-      files::default_dirs, files::wallhaven_download, files::save_text, files::save_bytes, apply::apply_theme
+      files::default_dirs, files::wallhaven_download, files::save_text, files::save_bytes, apply::apply_theme,
+      winapply::win_env, winapply::fs_exists, winapply::fs_read, winapply::fs_write, winapply::backup_begin,
+      winapply::reg_apply, winapply::set_wallpaper, winapply::broadcast_colors, winapply::run_tool,
+      winapply::log_append, winapply::log_tail, winapply::backup_list, winapply::backup_restore
     ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");
