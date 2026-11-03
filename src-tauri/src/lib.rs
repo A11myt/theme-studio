@@ -1,3 +1,4 @@
+mod apply;
 mod files;
 mod nerdfonts;
 
@@ -41,7 +42,7 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![list_fonts, nerdfonts::nerd_fonts_list, nerdfonts::nerd_font_install,
-      files::default_dirs, files::wallhaven_download, files::save_text, files::save_bytes
+      files::default_dirs, files::wallhaven_download, files::save_text, files::save_bytes, apply::apply_theme
     ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");

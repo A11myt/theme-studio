@@ -1,7 +1,7 @@
 // Ausgaben für Linux (matugen/Alacritty) und Windows (wintheme, Windows Terminal, komorebi).
 // Zuordnungen wie in dotfiles (matugen-Vorlagen) und dotfiles-windows (wintheme.py).
 import { ansi } from "./ansi";
-import { palette, SCHEMES, type Palette, type ThemeSettings } from "./color";
+import { effectiveSource, palette, SCHEMES, type Palette, type ThemeSettings } from "./color";
 import { DEFAULT_FONTS, fontValues, type Fonts } from "./fonts";
 
 export type ExportGroup = "windows" | "linux" | "allgemein";
@@ -74,13 +74,19 @@ function base16(c: Palette, dark: boolean) {
 }
 
 /** Befehle, die genau dieses Theme anwenden (gleiche Ausgangsfarbe → identische Palette). */
+/** --override-Argumente für wallthemes/wintheme */
+const overrideArgs = (t: ThemeSettings) =>
+  Object.entries(t.overrides ?? {}).filter(([, v]) => v).map(([k, v]) => ` --override ${k}=${v}`).join("");
+
 export function commands(t: ThemeSettings, f: Fonts = DEFAULT_FONTS) {
+  const src = effectiveSource(t);
   return {
     // färbt das aktuelle Windows-Wallpaper mit dieser Ausgangsfarbe, Terminal-Schrift = mono
-    windows: `wintheme --color ${t.source} --scheme ${t.scheme} --mode ${t.mode}` +
-      (t.contrast ? ` --contrast ${t.contrast}` : "") + ` --font "${f.mono}"`,
-    linux: `matugen color hex '${t.source}' -t scheme-${t.scheme} -m ${t.mode}` +
-      (t.contrast ? ` --contrast ${t.contrast}` : ""),
+    windows: `wintheme --color ${src} --scheme ${t.scheme} --mode ${t.mode}` +
+      (t.contrast ? ` --contrast ${t.contrast}` : "") + ` --font "${f.mono}"` + overrideArgs(t),
+    // färbt das aktuelle Wallpaper über wallthemes (deine matugen-Vorlagen + Hooks), Schrift über fontgen
+    linux: `wallthemes --color '${src}' --scheme ${t.scheme} --mode ${t.mode}` +
+      (t.contrast ? ` --contrast ${t.contrast}` : "") + overrideArgs(t).replace(/=(#[0-9a-f]+)/g, "='$1'"),
   };
 }
 
@@ -97,7 +103,7 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
     {
       id: "theme", group: "allgemein", label: "Theme-Datei", hint: "alles in einer Datei – zum Aufheben und Teilen",
       filename: `${s}.theme.json`,
-      text: json({ name, ...t, fonts: f, image: imageName ?? null, colors: c, commands: commands(t, f) }),
+      text: json({ name, ...t, effectiveSource: effectiveSource(t), fonts: f, image: imageName ?? null, colors: c, commands: commands(t, f) }),
     },
     {
       id: "terminal", group: "windows", label: "Windows Terminal", hint: "in settings.json unter „schemes“ einfügen",
@@ -175,5 +181,14 @@ export function parseThemeFile(text: string): { name: string; settings: ThemeSet
     uiSize: Number(f.uiSize) || DEFAULT_FONTS.uiSize, monoSize: Number(f.monoSize) || DEFAULT_FONTS.monoSize,
   } : undefined;
   const contrast = Math.max(-1, Math.min(1, Number(d.contrast) || 0));
-  return { name: String(d.name ?? "Importiert"), settings: { source: d.source.toLowerCase(), scheme: d.scheme, mode: d.mode, contrast }, fonts };
+  const tune = d.tune && Number.isFinite(d.tune.hue) && Number.isFinite(d.tune.chroma)
+    ? { hue: Math.max(-60, Math.min(60, d.tune.hue)), chroma: Math.max(0.4, Math.min(1.6, d.tune.chroma)) } : undefined;
+  const overrides = d.overrides && typeof d.overrides === "object"
+    ? Object.fromEntries(Object.entries(d.overrides).filter(([k, v]) => /^[a-z_]+$/.test(k) && typeof v === "string" && hex.test(v)))
+    : undefined;
+  return {
+    name: String(d.name ?? "Importiert"),
+    settings: { source: d.source.toLowerCase(), scheme: d.scheme, mode: d.mode, contrast, tune, overrides: overrides as Record<string, string> | undefined },
+    fonts,
+  };
 }

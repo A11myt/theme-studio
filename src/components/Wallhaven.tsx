@@ -1,16 +1,21 @@
 // wallhaven-Suche als Overlay: suchen, durchblättern, Bild anklicken → wird hochgeladen und ausgewählt.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { errText } from "../lib/platform";
-import { download, search, type WallhavenItem } from "../lib/wallhaven";
+import { download, nearestWallhavenColor, search, WALLHAVEN_COLORS, type WallhavenItem } from "../lib/wallhaven";
 
 interface Props {
   wallpaperDir?: string;   // App: Bilder landen hier
+  themeColors?: string[];  // Farben des aktuellen Themes → passende Wallpaper suchen
+  initialColor?: string;   // direkt mit dieser Farbe starten (wallhaven-Farbe ohne #)
   onClose: () => void;
   onPick: (file: File) => Promise<void>;
 }
 
-export function Wallhaven({ wallpaperDir, onClose, onPick }: Props) {
+export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClose, onPick }: Props) {
   const [query, setQuery] = useState("");
+  const [color, setColor] = useState<string | undefined>(initialColor);
+  const [showAll, setShowAll] = useState(false);
+  const themeChips = [...new Set(themeColors.map(nearestWallhavenColor))];
   const [items, setItems] = useState<WallhavenItem[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -19,11 +24,11 @@ export function Wallhaven({ wallpaperDir, onClose, onPick }: Props) {
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
-  const load = async (q: string, p: number) => {
+  const load = async (q: string, p: number, c = color) => {
     setLoading(true);
     setError("");
     try {
-      const r = await search(q, p);
+      const r = await search(q, p, c);
       setItems((prev) => (p === 1 ? r.items : [...prev, ...r.items]));
       setPage(r.page);
       setLastPage(r.lastPage);
@@ -35,7 +40,7 @@ export function Wallhaven({ wallpaperDir, onClose, onPick }: Props) {
   };
 
   useEffect(() => {
-    void load("", 1);                       // Start: Toplist des Monats
+    void load("", 1, initialColor);         // Start: Toplist des Monats bzw. passende Farbe
     input.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", esc);
@@ -68,6 +73,19 @@ export function Wallhaven({ wallpaperDir, onClose, onPick }: Props) {
           <button type="submit" className="primary">Suchen</button>
           <button type="button" className="ghost" onClick={onClose} aria-label="Schließen">✕</button>
         </form>
+        <div className="wh-colors">
+          <span className="empty">Farbe:</span>
+          <button type="button" className={`chip ${!color ? "on" : ""}`} onClick={() => { setColor(undefined); void load(query, 1, undefined); }}>alle</button>
+          {themeChips.map((c, i) => (
+            <button key={c} type="button" className={`chip col ${color === c ? "on" : ""}`} style={{ background: `#${c}` }}
+              title={`passend zum Theme (#${c})`} onClick={() => { setColor(c); void load(query, 1, c); }}>{i === 0 ? "Theme" : `Bild ${i}`}</button>
+          ))}
+          <button type="button" className="chip" onClick={() => setShowAll((v) => !v)}>{showAll ? "weniger" : "mehr Farben …"}</button>
+          {showAll && WALLHAVEN_COLORS.map((c) => (
+            <button key={c} type="button" className={`dot-btn ${color === c ? "on" : ""}`} style={{ background: `#${c}` }}
+              aria-label={`Farbe #${c}`} onClick={() => { setColor(c); void load(query, 1, c); }} />
+          ))}
+        </div>
         {error && <p className="error">{error}</p>}
         <ul className="wh-grid">
           {items.map((it) => (

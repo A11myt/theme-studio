@@ -89,3 +89,26 @@ export async function installNerdFont(f: NerdFont): Promise<{ files: number; dir
 
 /** Fehlertext – Tauri liefert Fehler als String, der Browser als Error. */
 export const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+export interface ApplyRequest {
+  image?: string;
+  source: string;
+  scheme: string;
+  mode: string;
+  contrast: number;
+  overrides: Record<string, string>;
+  fonts?: { ui: string; mono: string; accent: string; uiSize: number; monoSize: number };
+  fontProfile?: string;
+}
+
+/** Theme auf diesem Rechner anwenden (nur App) → Protokoll der aufgerufenen Programme. */
+export async function applyTheme(req: ApplyRequest): Promise<string> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<string>("apply_theme", { req });
+}
+
+/** Bild als Datei in den Wallpaper-Ordner legen (für wallthemes/wintheme) → Pfad. */
+export async function imageToDisk(blob: Blob, name: string, dir: string): Promise<string> {
+  const safe = name.replace(/[^\p{L}\p{N}\-_. ()]/gu, "-").replace(/^\.+/, "") || "bild.jpg";
+  return (await saveBytes(safe, new Uint8Array(await blob.arrayBuffer()), { dir }))!;
+}

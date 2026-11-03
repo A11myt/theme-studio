@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { ApplyDialog } from "./components/ApplyDialog";
 import { Desktop, type Os } from "./components/Desktop";
 import { FontPanel } from "./components/FontPanel";
 import { Library } from "./components/Library";
@@ -7,13 +8,14 @@ import { Readability } from "./components/Readability";
 import { TerminalPreview } from "./components/TerminalPreview";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { Wallhaven } from "./components/Wallhaven";
-import { hueName, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
+import { effectiveSource, hueName, NO_TUNE, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
 import { grade, PARTNER, ratio } from "./lib/contrast";
 import { commands, exportsFor, parseThemeFile, renderTemplate } from "./lib/exporters";
 import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
 import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, storeSettings, type AppSettings } from "./lib/settings";
 import { vscodeSettings, vscodeTheme, vscodeVsix } from "./lib/vscode";
+import { nearestWallhavenColor } from "./lib/wallhaven";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
 
 const DEFAULT: ThemeSettings = { source: "#6750a4", scheme: "tonal-spot", mode: "dark", contrast: 0 };
@@ -36,7 +38,9 @@ export function App() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
-  const [wallhaven, setWallhaven] = useState(false);
+  const [wallhaven, setWallhaven] = useState<false | { color?: string }>(false);
+  const [showApply, setShowApply] = useState(false);
+  const [editRole, setEditRole] = useState<string>();
   const [fonts, setFonts] = useState<Fonts>(DEFAULT_FONTS);
   const [app, setApp] = useState<AppSettings>({ wallpaperDir: "", exportDir: "", askOnSave: false });
   const [showSettings, setShowSettings] = useState(false);
@@ -112,7 +116,8 @@ export function App() {
 
   function selectImage(i: StoredImage) {
     setImageId(i.id);
-    setSettings((s) => ({ ...s, source: i.sources[0] ?? s.source }));
+    // neues Bild → Feinjustierung und Überschreibungen gehören zum alten Theme
+    setSettings((s) => ({ ...s, source: i.sources[0] ?? s.source, tune: undefined, overrides: undefined }));
     setName(i.name.replace(/\.[^.]+$/, ""));
   }
 
@@ -229,6 +234,11 @@ export function App() {
   };
 
   const themeName = name.trim() || "Theme";
+  const tune = settings.tune ?? NO_TUNE;
+  const effSource = effectiveSource(settings);
+  const overrideCount = Object.values(settings.overrides ?? {}).filter(Boolean).length;
+  const setOverride = (role: string, hex?: string) =>
+    update({ overrides: Object.fromEntries(Object.entries({ ...settings.overrides, [role]: hex }).filter(([, v]) => v)) });
   const cmds = commands(settings, fonts);
   const files = exportsFor(themeName, settings, image?.name, fonts);
   const vsSettings = JSON.stringify(vscodeSettings(themeName, fonts), null, 2);
@@ -285,11 +295,12 @@ export function App() {
         </div>
         <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label="Einstellungen" title="Einstellungen">⚙</button>
         <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name des Themes" aria-label="Name des Themes" />
-        <button type="button" className="primary" onClick={saveTheme}>Speichern</button>
+        <button type="button" className={isTauri ? "ghost" : "primary"} onClick={saveTheme} title="Im Studio speichern (Strg+S)">Speichern</button>
+        {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title="Auf diesem Rechner anwenden">Anwenden</button>}
       </header>
 
       <Library images={images} urls={urls} themes={themes} templates={templates} selectedImage={imageId} busy={busy}
-        onAddImages={addImages} onWallhaven={() => setWallhaven(true)} onSelectImage={(id) => { const i = images.find((x) => x.id === id); if (i) selectImage(i); }}
+        onAddImages={addImages} onWallhaven={() => setWallhaven({})} onSelectImage={(id) => { const i = images.find((x) => x.id === id); if (i) selectImage(i); }}
         onDeleteImage={deleteImage} onOpenTheme={openTheme} onDeleteTheme={deleteTheme}
         onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />
 
@@ -298,6 +309,10 @@ export function App() {
         <section className="card setup" id="farbe">
           <div className="hero">
             {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">Kein Bild – nur Farbe</div>}
+            <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
+              title="wallhaven nach Bildern in der Ausgangsfarbe durchsuchen">
+              <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} /> Passende Wallpaper suchen
+            </button>
           </div>
           <div className="controls">
             <h2>Ausgangsfarbe</h2>
@@ -331,6 +346,26 @@ export function App() {
             <h2>Kontrast <code>{settings.contrast.toFixed(1)}</code></h2>
             <input type="range" min={-1} max={1} step={0.1} value={settings.contrast}
               onChange={(e) => update({ contrast: Number(e.target.value) })} aria-label="Kontrast" />
+
+            <div className="tune">
+              <h2>Feinjustieren
+                {(tune.hue !== 0 || tune.chroma !== 1) && <button type="button" className="link" onClick={() => update({ tune: undefined })}>zurücksetzen</button>}
+              </h2>
+              <label>Farbton <code>{tune.hue > 0 ? "+" : ""}{tune.hue}°</code>
+                <input type="range" min={-60} max={60} step={1} value={tune.hue}
+                  onChange={(e) => update({ tune: { ...tune, hue: Number(e.target.value) } })} aria-label="Farbton verschieben" />
+              </label>
+              <label>Buntheit <code>{Math.round(tune.chroma * 100)} %</code>
+                <input type="range" min={0.4} max={1.6} step={0.05} value={tune.chroma}
+                  onChange={(e) => update({ tune: { ...tune, chroma: Number(e.target.value) } })} aria-label="Buntheit" />
+              </label>
+              <p className="tune-result">
+                <i className="sw inline" style={{ background: settings.source }} /> → <i className="sw inline" style={{ background: effSource }} />
+                <code>{effSource}</code>
+                {overrideCount > 0 && <span> · {overrideCount} Farbe{overrideCount > 1 ? "n" : ""} überschrieben
+                  <button type="button" className="link" onClick={() => update({ overrides: undefined })}>zurücksetzen</button></span>}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -385,6 +420,24 @@ export function App() {
             <TerminalPreview c={pal} t={settings} fonts={fonts} />
             <Readability c={pal} />
           </div>
+          {editRole && (() => {
+            const cur = (pal as Record<string, string>)[editRole];
+            const orig = (palette({ ...settings, overrides: undefined }) as Record<string, string>)[editRole];
+            const partner = PARTNER[editRole] ? (pal as Record<string, string>)[PARTNER[editRole]] : undefined;
+            return (
+              <div className="role-editor">
+                <b>{editRole.replace(/_/g, " ")}</b>
+                <input type="color" value={cur} onChange={(e) => setOverride(editRole, e.target.value)} aria-label="Farbe wählen" />
+                <code>{cur}</code>
+                {settings.overrides?.[editRole] && <small className="empty">vorher <i className="sw inline" style={{ background: orig }} /> {orig}</small>}
+                {partner && <span className={`badge ${grade(ratio(cur, partner))}`}>Kontrast {ratio(cur, partner).toFixed(1)}</span>}
+                <span className="grow" />
+                <button type="button" className="ghost" onClick={() => copy(cur)}>Kopieren</button>
+                {settings.overrides?.[editRole] && <button type="button" className="ghost" onClick={() => setOverride(editRole, undefined)}>Zurücksetzen</button>}
+                <button type="button" className="ghost" onClick={() => setEditRole(undefined)} aria-label="Schließen">✕</button>
+              </div>
+            );
+          })()}
           <div className="palette">
             {PALETTE_GROUPS.map(([title, roles]) => (
               <div key={title}>
@@ -395,9 +448,10 @@ export function App() {
                     const partner = PARTNER[r] ? (pal as Record<string, string>)[PARTNER[r]] : undefined;
                     const cr = partner ? ratio(hex, partner) : 0;
                     return (
-                      <button key={r} type="button" className="swatch" style={{ background: hex, color: partner ?? onColor(hex) }}
-                        onClick={() => copy(hex)} title={`Klicken zum Kopieren${partner ? ` · Kontrast zu ${PARTNER[r].replace(/_/g, " ")}: ${cr.toFixed(1)}` : ""}`}>
-                        <span>{r.replace(/_/g, " ")}</span>
+                      <button key={r} type="button" className={`swatch ${editRole === r ? "editing" : ""}`} style={{ background: hex, color: partner ?? onColor(hex) }}
+                        onClick={() => setEditRole(editRole === r ? undefined : r)} aria-pressed={editRole === r}
+                        title={`Klicken zum Bearbeiten${partner ? ` · Kontrast zu ${PARTNER[r].replace(/_/g, " ")}: ${cr.toFixed(1)}` : ""}`}>
+                        <span>{settings.overrides?.[r] ? "✎ " : ""}{r.replace(/_/g, " ")}</span>
                         <code>{hex}{partner && <b className={`dot ${grade(cr)}`} />}</code>
                       </button>
                     );
@@ -412,10 +466,11 @@ export function App() {
         {tab === "export" && (<div className="pane" role="tabpanel">
         <section className="card summary">
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
-          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"} · {settings.source} · {fonts.mono}</small></span>
+          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"} · {effSource}{overrideCount ? ` · ${overrideCount} überschrieben` : ""} · {fonts.mono}</small></span>
           <span className="grow" />
           <button type="button" className="ghost" onClick={() => setTab("farbe")}>Farbe ändern</button>
           <button type="button" className="ghost" onClick={() => setTab("schrift")}>Schrift ändern</button>
+          {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>Anwenden</button>}
         </section>
         <section className="card export" id="export">
           <h2>Anwenden</h2>
@@ -479,7 +534,9 @@ export function App() {
         </div>)}
       </main>
 
-      {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
+      {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} initialColor={wallhaven.color}
+        themeColors={[effSource, ...(image?.sources ?? [])]} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
+      {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
       {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
         onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(`${fam} Nerd Font installiert`, 3000); }} />}
       {showSettings && <SettingsDialog value={app} onClose={() => setShowSettings(false)}

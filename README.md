@@ -32,9 +32,15 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
   `settings.json`-Auszug (Theme + Schrift), Theme-Datei
 - **Einstellungen** (App, ⚙): Wallpaper-Ordner (wallhaven-Bilder landen dort), Export-Ordner, „jedes Mal fragen“
 - **Speichern**: Themes (Farben + Schrift) bleiben lokal (IndexedDB)
+- **Anwenden per Knopf** (App): setzt das Theme auf diesem Rechner – Linux über `wallthemes` (Wallpaper,
+  alle matugen-Vorlagen, Hooks) und `fontgen`, Windows über `wintheme` (inkl. Terminal-Schrift)
+- **Feinjustieren**: Farbton und Buntheit der Ausgangsfarbe verschieben (bleibt überall exakt – es ist wieder eine
+  Farbe) und einzelne Rollen überschreiben (Vorschau → Palette anklicken); Überschreibungen gehen als `--override`
+  an wallthemes (über `matugen json`, also deine Vorlagen) und wintheme
+- **Passende Wallpaper**: wallhaven nach der Ausgangsfarbe bzw. den Bildfarben durchsuchen (29 wallhaven-Farben)
 - **Anwenden**: fertige Befehle
   - Windows: `wintheme --color #db79a9 --scheme vibrant --mode dark --font "Iosevka Nerd Font Mono"` (aktuelles Wallpaper)
-  - Linux: `matugen color hex '#db79a9' -t scheme-vibrant -m dark`
+  - Linux: `wallthemes --color '#db79a9' --scheme vibrant --mode dark` (aktuelles Wallpaper, matugen-Vorlagen + Hooks)
 - **Dateien** (nach Windows/Linux/Allgemein filterbar): Theme-Datei, Windows-Terminal-Schema + -Schrift, komorebi-Theme,
   fontgen-Profil, base16-YAML (Stylix, tinted-theming), pywal `colors.json`, Xresources, CSS-Variablen
 - **Vorlagen**: eigene matugen- und fontgen-Vorlagen hochladen (z. B. `alacritty.toml`) → mit dem Theme ausgefüllt

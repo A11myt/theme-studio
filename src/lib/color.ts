@@ -33,11 +33,28 @@ export const SCHEMES = {
 export type SchemeName = keyof typeof SCHEMES;
 export type Mode = "dark" | "light";
 
+export interface Tune {
+  hue: number;           // Farbton verschieben, Grad (-60 … 60)
+  chroma: number;        // Buntheit, Faktor (0,4 … 1,6)
+}
+
 export interface ThemeSettings {
-  source: string;        // Ausgangsfarbe #rrggbb
+  source: string;        // Ausgangsfarbe #rrggbb (aus dem Bild oder eigene)
   scheme: SchemeName;
   mode: Mode;
   contrast: number;      // -1 … 1
+  tune?: Tune;           // Feinjustierung der Ausgangsfarbe – bleibt überall exakt (es ist wieder nur eine Farbe)
+  overrides?: Partial<Record<string, string>>;   // einzelne Rollen ersetzen (→ --override bei wallthemes/wintheme)
+}
+
+export const NO_TUNE: Tune = { hue: 0, chroma: 1 };
+
+/** Tatsächliche Ausgangsfarbe nach Feinjustierung – diese Farbe bekommen matugen/wallthemes/wintheme. */
+export function effectiveSource(t: ThemeSettings): string {
+  const tune = t.tune;
+  if (!tune || (tune.hue === 0 && tune.chroma === 1)) return t.source;
+  const h = Hct.fromInt(argbFromHex(t.source));
+  return hexFromArgb(Hct.from((h.hue + tune.hue + 360) % 360, Math.max(0, h.chroma * tune.chroma), h.tone).toInt());
 }
 
 // alle Rollen, die matugen ausgibt (snake_case wie in dessen Vorlagen)
@@ -62,13 +79,14 @@ const camel = (s: string) => s.replace(/_([a-z])/g, (_, c: string) => c.toUpperC
 
 export function buildScheme(t: ThemeSettings): DynamicScheme {
   const Cls = SCHEMES[t.scheme].cls;
-  return new Cls(Hct.fromInt(argbFromHex(t.source)), t.mode === "dark", t.contrast, "2021");
+  return new Cls(Hct.fromInt(argbFromHex(effectiveSource(t))), t.mode === "dark", t.contrast, "2021");
 }
 
 export function palette(t: ThemeSettings): Palette {
   const s = buildScheme(t) as unknown as Record<string, number>;
   const out = {} as Palette;
   for (const r of ROLES) out[r] = hexFromArgb(s[camel(r)]);
+  for (const [r, v] of Object.entries(t.overrides ?? {})) if (v && r in out) out[r as Role] = v;
   return out;
 }
 
