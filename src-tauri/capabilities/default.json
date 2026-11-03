@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Rechte der App: wallhaven, Speichern-Dialog, Dateien schreiben, Zwischenablage",
+  "description": "Rechte der App: wallhaven-Suche, Dialoge (Speichern, Ordner w\u00e4hlen), Zwischenablage \u2013 Dateien schreibt die App selbst (Rust)",
   "windows": [
     "main"
   ],
@@ -12,21 +12,12 @@
       "allow": [
         {
           "url": "https://wallhaven.cc/api/v1/*"
-        },
-        {
-          "url": "https://w.wallhaven.cc/full/*"
         }
       ]
     },
     "dialog:allow-save",
-    {
-      "identifier": "fs:allow-write-text-file",
-      "allow": [
-        {
-          "path": "$HOME/**"
-        }
-      ]
-    },
+    "dialog:allow-open",
+    "dialog:allow-ask",
     "clipboard-manager:allow-write-text"
   ]
 }

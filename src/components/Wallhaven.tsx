@@ -1,13 +1,15 @@
 // wallhaven-Suche als Overlay: suchen, durchblättern, Bild anklicken → wird hochgeladen und ausgewählt.
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { errText } from "../lib/platform";
 import { download, search, type WallhavenItem } from "../lib/wallhaven";
 
 interface Props {
+  wallpaperDir?: string;   // App: Bilder landen hier
   onClose: () => void;
   onPick: (file: File) => Promise<void>;
 }
 
-export function Wallhaven({ onClose, onPick }: Props) {
+export function Wallhaven({ wallpaperDir, onClose, onPick }: Props) {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<WallhavenItem[]>([]);
   const [page, setPage] = useState(1);
@@ -26,7 +28,7 @@ export function Wallhaven({ onClose, onPick }: Props) {
       setPage(r.page);
       setLastPage(r.lastPage);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setLoading(false);
     }
@@ -47,10 +49,10 @@ export function Wallhaven({ onClose, onPick }: Props) {
     setBusyId(it.id);
     setError("");
     try {
-      await onPick(await download(it));
+      await onPick(await download(it, wallpaperDir));
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusyId(undefined);
     }

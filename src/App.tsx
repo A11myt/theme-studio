@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Desktop, type Os } from "./components/Desktop";
+import { FontPanel } from "./components/FontPanel";
 import { Library } from "./components/Library";
+import { NerdFonts } from "./components/NerdFonts";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { Wallhaven } from "./components/Wallhaven";
 import { hueName, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
-import { commands, download, exportsFor, renderTemplate } from "./lib/exporters";
-import { copyText } from "./lib/platform";
+import { commands, exportsFor, renderTemplate } from "./lib/exporters";
+import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
+import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
+import { loadSettings, storeSettings, type AppSettings } from "./lib/settings";
+import { vscodeSettings, vscodeTheme, vscodeVsix } from "./lib/vscode";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
 
 const DEFAULT: ThemeSettings = { source: "#6750a4", scheme: "tonal-spot", mode: "dark", contrast: 0 };
@@ -25,6 +31,13 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [wallhaven, setWallhaven] = useState(false);
+  const [fonts, setFonts] = useState<Fonts>(DEFAULT_FONTS);
+  const [app, setApp] = useState<AppSettings>({ wallpaperDir: "", exportDir: "", askOnSave: false });
+  const [showSettings, setShowSettings] = useState(false);
+  const [showNerd, setShowNerd] = useState(false);
+  const [fontsKey, setFontsKey] = useState(0);
+
+  useEffect(() => { void loadSettings().then(setApp); }, []);
 
   // Laden aus IndexedDB
   useEffect(() => {
@@ -51,7 +64,7 @@ export function App() {
   const image = images.find((i) => i.id === imageId);
   const pal = useMemo(() => palette(settings), [settings]);
 
-  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 1800); };
+  const flash = (msg: string, ms = 1800) => { setToast(msg); setTimeout(() => setToast(""), ms); };
   const update = (patch: Partial<ThemeSettings>) => setSettings((s) => ({ ...s, ...patch }));
 
   function selectImage(i: StoredImage) {
@@ -74,7 +87,7 @@ export function App() {
       setImages((prev) => [...added, ...prev]);
       selectImage(added[0]);
     } catch (e) {
-      flash(`Bild konnte nicht gelesen werden: ${(e as Error).message}`);
+      flash(`Bild konnte nicht gelesen werden: ${errText(e)}`, 4000);
     } finally {
       setBusy(false);
     }
@@ -89,7 +102,7 @@ export function App() {
   };
 
   const saveTheme = async () => {
-    const t: StoredTheme = { id: uid(), name: name.trim() || "Theme", imageId, settings, created: Date.now() };
+    const t: StoredTheme = { id: uid(), name: name.trim() || "Theme", imageId, settings, fonts, created: Date.now() };
     await db.putTheme(t);
     setThemes((prev) => [t, ...prev]);
     flash(`„${t.name}“ gespeichert`);
@@ -97,6 +110,7 @@ export function App() {
 
   const openTheme = (t: StoredTheme) => {
     setSettings(t.settings);
+    setFonts(t.fonts ?? DEFAULT_FONTS);
     setName(t.name);
     setImageId(t.imageId && images.some((i) => i.id === t.imageId) ? t.imageId : undefined);
   };
@@ -131,8 +145,20 @@ export function App() {
     }
   };
 
-  const cmds = commands(settings);
-  const files = exportsFor(name || "Theme", settings, image?.name);
+  // Speichern in den Export-Ordner (App) bzw. als Download (Browser)
+  const saveOpts = { dir: app.exportDir, ask: app.askOnSave };
+  const report = (where: string | null) => where && flash(isTauri ? `Gespeichert: ${where}` : "Heruntergeladen", 3500);
+  const saveFile = (filename: string, text: string) =>
+    void saveText(filename, text, saveOpts).then(report).catch((e) => flash(`Speichern fehlgeschlagen: ${errText(e)}`, 5000));
+  const saveVsix = () => {
+    const v = vscodeVsix(themeName, settings, pal);
+    void saveBytes(v.filename, v.bytes, saveOpts).then(report).catch((e) => flash(`Speichern fehlgeschlagen: ${errText(e)}`, 5000));
+  };
+
+  const themeName = name.trim() || "Theme";
+  const cmds = commands(settings, fonts);
+  const files = exportsFor(themeName, settings, image?.name, fonts);
+  const vsSettings = JSON.stringify(vscodeSettings(themeName, fonts), null, 2);
   const bg = image ? urls[image.id] : undefined;
 
   return (
@@ -144,6 +170,7 @@ export function App() {
           <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
         </div>
         <span className="grow" />
+        <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label="Einstellungen" title="Einstellungen">⚙</button>
         <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name des Themes" aria-label="Name des Themes" />
         <button type="button" className="primary" onClick={saveTheme}>Speichern</button>
       </header>
@@ -194,6 +221,8 @@ export function App() {
           </div>
         </section>
 
+        <FontPanel fonts={fonts} onChange={setFonts} onNerdFonts={() => setShowNerd(true)} refreshKey={fontsKey} />
+
         {/* Alle Varianten nebeneinander */}
         <section>
           <h2 className="section-title">Varianten <small>anklicken zum Auswählen</small></h2>
@@ -202,7 +231,7 @@ export function App() {
               const c = palette({ ...settings, scheme: k });
               return (
                 <button key={k} type="button" className="variant" aria-pressed={settings.scheme === k} onClick={() => update({ scheme: k })}>
-                  <Desktop c={c} os={os} image={bg} />
+                  <Desktop c={c} os={os} image={bg} fonts={fonts} />
                   <span className="vname">{SCHEMES[k].label}<small>{SCHEMES[k].hint}</small></span>
                   <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface_container_high].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
                 </button>
@@ -214,8 +243,8 @@ export function App() {
         {/* Gewählte Variante groß + Palette */}
         <section className="card detail">
           <div className="big">
-            <Desktop c={pal} os="linux" image={bg} size="large" />
-            <Desktop c={pal} os="windows" image={bg} size="large" />
+            <Desktop c={pal} os="linux" image={bg} size="large" fonts={fonts} />
+            <Desktop c={pal} os="windows" image={bg} size="large" fonts={fonts} />
           </div>
           <div className="palette">
             {PALETTE_GROUPS.map(([title, roles]) => (
@@ -249,22 +278,39 @@ export function App() {
             <button type="button" className="ghost" onClick={() => copy(cmds.linux)}>Kopieren</button>
           </div>
 
-          <h2>Dateien</h2>
+          <h2>VS Code</h2>
+          <ul className="files">
+            <li>
+              <span><b>Erweiterung (.vsix)</b><small>installieren: <code>code --install-extension …vsix</code> oder Erweiterungen → … → „Aus VSIX installieren“</small></span>
+              <button type="button" className="primary" onClick={saveVsix}>Speichern</button>
+            </li>
+            <li>
+              <span><b>settings.json</b><small>Theme auswählen + Schrift „{fonts.mono}“ für Editor und Terminal</small></span>
+              <button type="button" className="ghost" onClick={() => copy(vsSettings)}>Kopieren</button>
+            </li>
+            <li>
+              <span><b>Theme-Datei</b><small>für eigene Erweiterungen oder zum Teilen</small></span>
+              <button type="button" className="ghost" onClick={() => copy(JSON.stringify(vscodeTheme(themeName, settings, pal), null, 2))}>Kopieren</button>
+              <button type="button" className="ghost" onClick={() => saveFile(`${themeName}.vscode-theme.json`, JSON.stringify(vscodeTheme(themeName, settings, pal), null, 2) + "\n")}>Speichern</button>
+            </li>
+          </ul>
+
+          <h2>Dateien {isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
           <ul className="files">
             {files.map((f) => (
               <li key={f.id}>
                 <span><b>{f.label}</b><small>{f.hint}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(f.text)}>Kopieren</button>
-                <button type="button" className="ghost" onClick={() => void download(f.filename, f.text).then((ok) => ok && flash("Gespeichert"))}>Herunterladen</button>
+                <button type="button" className="ghost" onClick={() => saveFile(f.filename, f.text)}>Speichern</button>
               </li>
             ))}
             {templates.map((t) => {
-              const out = () => renderTemplate(t.text, settings, image?.name);
+              const out = () => renderTemplate(t.text, settings, image?.name, fonts);
               return (
                 <li key={t.id}>
-                  <span><b>{t.name}</b><small>aus deiner matugen-Vorlage</small></span>
+                  <span><b>{t.name}</b><small>aus deiner Vorlage (matugen-/fontgen-Platzhalter)</small></span>
                   <button type="button" className="ghost" onClick={() => copy(out())}>Kopieren</button>
-                  <button type="button" className="ghost" onClick={() => void download(t.output, out()).then((ok) => ok && flash("Gespeichert"))}>Herunterladen</button>
+                  <button type="button" className="ghost" onClick={() => saveFile(t.output, out())}>Speichern</button>
                 </li>
               );
             })}
@@ -272,7 +318,11 @@ export function App() {
         </section>
       </main>
 
-      {wallhaven && <Wallhaven onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
+      {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
+      {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
+        onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(`${fam} Nerd Font installiert`, 3000); }} />}
+      {showSettings && <SettingsDialog value={app} onClose={() => setShowSettings(false)}
+        onSave={(s) => { setApp(s); storeSettings(s); flash("Einstellungen gespeichert"); }} />}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite">{toast}</div>
     </div>
   );

@@ -1,6 +1,6 @@
 // wallhaven.cc ohne Anmeldung – gleiche Filter wie der Launcher auf dem Laptop (scripts/wallhaven.py):
 // nur jugendfrei, mind. 1920×1080, 16:9/16:10, Allgemein/Anime/Personen; leer = Toplist des letzten Monats.
-import { netFetch } from "./platform";
+import { isTauri, netFetch } from "./platform";
 export interface WallhavenItem {
   id: string;
   thumb: string;   // Vorschau (direkt von th.wallhaven.cc ladbar)
@@ -39,13 +39,21 @@ export async function search(query: string, page = 1): Promise<WallhavenPage> {
   };
 }
 
-/** Originalbild als Datei laden. */
-export async function download(item: WallhavenItem): Promise<File> {
+const MIME: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+
+/** Originalbild als Datei laden. App: über Rust direkt in den Wallpaper-Ordner, Browser: über den Entwicklungsserver. */
+export async function download(item: WallhavenItem, wallpaperDir?: string): Promise<File> {
   const u = new URL(item.full);
   if (u.hostname !== "w.wallhaven.cc" || !u.pathname.startsWith("/full/")) throw new Error("unerwartete Bildadresse");
-  const r = await netFetch(`https://w.wallhaven.cc${u.pathname}`);
+  const name = u.pathname.slice(u.pathname.lastIndexOf("/") + 1);
+  const type = MIME[name.split(".").pop()!.toLowerCase()] ?? "image/jpeg";
+  if (isTauri) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const bytes = await invoke<ArrayBuffer>("wallhaven_download", { url: item.full, dir: wallpaperDir ?? "" });
+    return new File([bytes], name, { type });
+  }
+  const r = await netFetch(item.full);
   if (!r.ok) throw new Error(`Download fehlgeschlagen (${r.status})`);
   const blob = await r.blob();
-  if (!blob.type.startsWith("image/")) throw new Error("kein Bild erhalten");
-  return new File([blob], `wallhaven-${item.id}${u.pathname.slice(u.pathname.lastIndexOf("."))}`, { type: blob.type });
+  return new File([blob], name, { type: blob.type.startsWith("image/") ? blob.type : type });
 }

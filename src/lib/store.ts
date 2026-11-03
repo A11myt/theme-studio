@@ -1,6 +1,7 @@
 // Alles bleibt lokal im Browser (IndexedDB): hochgeladene Bilder, gespeicherte Themes, matugen-Vorlagen.
 import { createStore, del, entries, set } from "idb-keyval";
 import type { ThemeSettings } from "./color";
+import type { Fonts } from "./fonts";
 
 export interface StoredImage {
   id: string;
@@ -16,6 +17,7 @@ export interface StoredTheme {
   name: string;
   imageId?: string;       // Bild, aus dem das Theme entstand (optional: auch reine Farbe möglich)
   settings: ThemeSettings;
+  fonts?: Fonts;          // fehlt bei älteren Themes → Standard
   created: number;
 }
 

@@ -2,6 +2,7 @@
 // „linux“ = Hyprland + Quickshell-Leiste (Bubbles), „windows“ = komorebi + komorebi-Leiste + Windows Terminal.
 import type { CSSProperties } from "react";
 import type { Palette } from "../lib/color";
+import { cssFont, type Fonts } from "../lib/fonts";
 
 export type Os = "linux" | "windows";
 
@@ -10,14 +11,17 @@ interface Props {
   os: Os;
   image?: string;     // Objekt-URL des Wallpapers
   size?: "small" | "large";
+  fonts?: Fonts;
 }
 
-export function Desktop({ c, os, image, size = "small" }: Props) {
+export function Desktop({ c, os, image, size = "small", fonts }: Props) {
   const vars = {
     "--s": c.surface, "--sc": c.surface_container, "--sch": c.surface_container_high,
     "--p": c.primary, "--op": c.on_primary, "--t": c.tertiary, "--sec": c.secondary,
     "--os": c.on_surface, "--osv": c.on_surface_variant, "--ov": c.outline_variant, "--err": c.error,
     backgroundImage: image ? `url(${image})` : undefined,
+    "--font-ui": fonts ? cssFont(fonts.ui, "var(--sans)") : "var(--mono)",
+    "--font-mono": fonts ? cssFont(fonts.mono, "monospace") : "var(--mono)",
   } as CSSProperties;
 
   return (

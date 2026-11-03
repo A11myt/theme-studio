@@ -18,13 +18,20 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **9 Varianten** (tonal-spot, vibrant, expressive …) als Mini-Desktops: Linux-Leiste mit Bubbles oder
   Windows mit komorebi-Leiste und Terminal, jeweils auf dem Wallpaper
 - **Hell/Dunkel, Kontrast**, komplette Palette (Klick kopiert die Farbe)
-- **Speichern**: Themes bleiben im Browser (IndexedDB)
+- **Schrift** wie fontgen: Oberfläche, Mono, Akzent + Größen; deine Profile iosevka/hack/jetbrains als Vorlage,
+  Auswahl aus den installierten Schriften, Vorschau in den Mini-Desktops. Gespeichert wird nur der Name.
+- **Nerd Fonts von GitHub** (App): Liste des neuesten Releases, Installieren auf Klick – nur Mono + Propo in
+  Regular/Bold/Italic/BoldItalic (8 Dateien) in den Benutzer-Schriftordner, nichts im Projekt
+- **VS Code**: installierbare Erweiterung (`.vsix`, Oberfläche wie deine matugen-Vorlage + Syntaxfarben),
+  `settings.json`-Auszug (Theme + Schrift), Theme-Datei
+- **Einstellungen** (App, ⚙): Wallpaper-Ordner (wallhaven-Bilder landen dort), Export-Ordner, „jedes Mal fragen“
+- **Speichern**: Themes (Farben + Schrift) bleiben lokal (IndexedDB)
 - **Anwenden**: fertige Befehle
-  - Windows: `wintheme --color #db79a9 --scheme vibrant --mode dark` (färbt das aktuelle Wallpaper)
+  - Windows: `wintheme --color #db79a9 --scheme vibrant --mode dark --font "Iosevka Nerd Font Mono"` (aktuelles Wallpaper)
   - Linux: `matugen color hex '#db79a9' -t scheme-vibrant -m dark`
-- **Dateien**: Theme-Datei, Windows-Terminal-Schema, komorebi-Theme, CSS-Variablen
-- **Vorlagen**: eigene matugen-Vorlagen hochladen (z. B. `alacritty.toml`) → mit dem Theme ausgefüllt
-  (`{{colors.<rolle>.<default|dark|light>.<hex|hex_stripped|rgb|rgba>}}`, `{{mode}}`, `{{image}}`)
+- **Dateien**: Theme-Datei, Windows-Terminal-Schema + -Schrift, komorebi-Theme, fontgen-Profil, CSS-Variablen
+- **Vorlagen**: eigene matugen- und fontgen-Vorlagen hochladen (z. B. `alacritty.toml`) → mit dem Theme ausgefüllt
+  (`{{colors.<rolle>.<default|dark|light>.<hex|hex_stripped|rgb|rgba>}}`, `{{fonts.ui|mono|accent|ui_size|mono_size|ui_px|mono_px}}`, `{{mode}}`, `{{image}}`)
 
 Gleiche Ausgangsfarbe + Variante + Modus ⇒ **identische Palette** in Studio, matugen und wintheme
 (material-color-utilities, Spezifikation 2021).
@@ -49,10 +56,10 @@ cd color-wasm && cargo run --release -- bild.jpg   # Gegenprobe zu: matugen imag
 
 ## Desktop-App (Tauri 2)
 
-Dieselbe Oberfläche als eigenes Fenster. Unterschiede zur Browser-Version: wallhaven läuft direkt
-über Tauri (kein Entwicklungsserver nötig), „Herunterladen“ öffnet einen Speichern-Dialog.
-Rechte der App (`src-tauri/capabilities/default.json`): nur wallhaven, Speichern-Dialog,
-Textdateien im Benutzerordner schreiben, Zwischenablage.
+Dieselbe Oberfläche als eigenes Fenster, plus: Einstellungen (Speicherorte), Nerd Fonts, Liste der installierten
+Schriften. wallhaven-Bilder lädt die App in Rust direkt in den Wallpaper-Ordner; Exporte schreibt sie selbst
+(jeder Ordner möglich, auch `D:\` unter Windows). Rechte der Oberfläche (`src-tauri/capabilities/default.json`):
+wallhaven-Suche, Dialoge, Zwischenablage – mehr nicht.
 
 Voraussetzungen unter Arch: Rust (`rustup`) und
 `sudo pacman -S --needed webkit2gtk-4.1 libappindicator-gtk3 librsvg`.

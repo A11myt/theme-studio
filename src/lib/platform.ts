@@ -14,22 +14,40 @@ export async function netFetch(url: string): Promise<Response> {
   return fetch(local);
 }
 
-/** Textdatei speichern: App → Speichern-Dialog, Browser → Download. */
-export async function saveText(filename: string, text: string): Promise<boolean> {
+/** Textdatei speichern. App: in den Export-Ordner (oder per Dialog), Browser: Download.
+ *  → gespeicherter Pfad bzw. Dateiname, null = abgebrochen */
+export async function saveText(filename: string, text: string, opts: { dir?: string; ask?: boolean } = {}): Promise<string | null> {
   if (isTauri) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    if (opts.dir && !opts.ask) return invoke<string>("save_text", { dir: opts.dir, name: filename, text });
     const { save } = await import("@tauri-apps/plugin-dialog");
-    const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-    const path = await save({ defaultPath: filename });
-    if (!path) return false;
-    await writeTextFile(path, text);
-    return true;
+    const path = await save({ defaultPath: opts.dir ? `${opts.dir}/${filename}` : filename });
+    return path ? invoke<string>("save_text", { path, text }) : null;
   }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  return true;
+  return filename;
+}
+
+/** Binärdatei speichern (VS-Code-Erweiterung) – wie saveText. */
+export async function saveBytes(filename: string, bytes: Uint8Array, opts: { dir?: string; ask?: boolean } = {}): Promise<string | null> {
+  if (isTauri) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const data = Array.from(bytes);
+    if (opts.dir && !opts.ask) return invoke<string>("save_bytes", { dir: opts.dir, name: filename, bytes: data });
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const path = await save({ defaultPath: opts.dir ? `${opts.dir}/${filename}` : filename });
+    return path ? invoke<string>("save_bytes", { path, bytes: data }) : null;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/octet-stream" }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return filename;
 }
 
 export async function copyText(text: string): Promise<void> {
@@ -39,3 +57,35 @@ export async function copyText(text: string): Promise<void> {
   }
   return navigator.clipboard.writeText(text);
 }
+
+/** Installierte Schriften: App → System (fc-list / Windows), Browser → nur Chromium (queryLocalFonts). */
+export async function systemFonts(): Promise<string[]> {
+  try {
+    if (isTauri) {
+      const { invoke } = await import("@tauri-apps/api/core");
+      return await invoke<string[]>("list_fonts");
+    }
+    const q = (window as unknown as { queryLocalFonts?: () => Promise<{ family: string }[]> }).queryLocalFonts;
+    if (q) return [...new Set((await q()).map((f) => f.family))].sort((a, b) => a.localeCompare(b));
+  } catch {
+    /* keine Liste – freie Eingabe bleibt */
+  }
+  return [];
+}
+
+export interface NerdFont { name: string; size: number; url: string; version: string }
+
+/** Nerd Fonts des neuesten Releases (nur App). */
+export async function nerdFonts(): Promise<NerdFont[]> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<NerdFont[]>("nerd_fonts_list");
+}
+
+/** Eine Nerd Font für den Benutzer installieren (nur App) → Anzahl Dateien. */
+export async function installNerdFont(f: NerdFont): Promise<{ files: number; dir: string }> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke("nerd_font_install", { name: f.name, url: f.url });
+}
+
+/** Fehlertext – Tauri liefert Fehler als String, der Browser als Error. */
+export const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));

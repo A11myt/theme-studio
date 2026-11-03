@@ -160,3 +160,37 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .desk .term span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .desk-small .pill { padding: 2px 5px; }
 .engine { color: var(--muted); margin-left: 8px; font-size: .78rem; }
+
+/* Schriften in der Vorschau: Leiste = Oberfläche, Fenster = Mono */
+.desk .bar { font-family: var(--font-ui); }
+.desk .win { font-family: var(--font-mono); }
+
+/* Schrift-Bereich */
+.fonts-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fonts-head h2 { margin: 0; }
+.font-rows { display: grid; gap: 10px; margin-top: 12px; }
+.font-row { display: grid; grid-template-columns: 300px 1fr; gap: 4px 14px; align-items: center; }
+.font-row label { display: grid; gap: 4px; }
+.font-row label span { font-size: .85rem; font-weight: 500; }
+.font-row label small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.font-row .name { width: 100%; }
+.sample { margin: 0; font-size: 1.15rem; background: var(--panel-2); border-radius: 8px; padding: 8px 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.warn { grid-column: 2; color: #e6b450; font-size: .78rem; }
+.font-sizes { display: flex; gap: 18px; font-size: .85rem; color: var(--muted); }
+.font-sizes input { width: 64px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--fg); padding: 3px 6px; font: inherit; }
+.icon { font-size: 1.05rem; padding: 4px 10px; }
+
+/* Nerd Fonts + Einstellungen */
+.nf-list { list-style: none; margin: 0; padding: 8px 14px; overflow-y: auto; display: grid; gap: 2px; }
+.nf-list li { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.nf-list li span { flex: 1; } .nf-list small { color: var(--muted); margin-left: 8px; }
+.nf-list .ok { color: #7fd17f; }
+.sheet.settings { width: min(680px, 100%); }
+.pad { padding: 14px; }
+.form { display: grid; gap: 16px; }
+.form label > span { display: grid; font-weight: 500; margin-bottom: 6px; }
+.form small { color: var(--muted); font-weight: 400; }
+.pick { display: flex; gap: 8px; } .pick .name { flex: 1; width: auto; }
+.check { display: flex; gap: 8px; align-items: center; }
+.export code { font-size: .8em; }
+@media (max-width: 900px) { .font-row { grid-template-columns: 1fr; } .warn { grid-column: 1; } }
