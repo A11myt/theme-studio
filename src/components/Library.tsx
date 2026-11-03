@@ -2,6 +2,7 @@
 import { useRef, useState, type DragEvent } from "react";
 import { hasWallhaven } from "../lib/platform";
 import type { StoredImage, StoredTemplate, StoredTheme } from "../lib/store";
+import { t, t as tr } from "../lib/i18n";
 
 interface Props {
   images: StoredImage[];
@@ -38,24 +39,24 @@ export function Library(p: Props) {
   return (
     <aside className="library">
       <section>
-        <h2>Bilder</h2>
+        <h2>{t("Bilder")}</h2>
         <button type="button" className={`drop ${drag ? "over" : ""}`}
           onClick={() => imgInput.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)} onDrop={drop}>
-          {p.busy ? "Farben werden berechnet …" : <>Bilder hierher ziehen<br /><small>oder klicken · Vorlagen auch</small></>}
+          {p.busy ? t("Farben werden berechnet …") : <>{t("Bilder hierher ziehen")}<br /><small>{t("oder klicken · Vorlagen auch")}</small></>}
         </button>
         {hasWallhaven
-          ? <button type="button" className="ghost wide" onClick={p.onWallhaven}>Auf wallhaven suchen</button>
-          : <p className="empty">wallhaven-Suche gibt es in der App (oder lokal mit <code>pnpm dev</code>).</p>}
+          ? <button type="button" className="ghost wide" onClick={p.onWallhaven}>{t("Auf wallhaven suchen")}</button>
+          : <p className="empty">{t("wallhaven-Suche gibt es in der App (oder lokal mit pnpm dev).")}</p>}
         <input ref={imgInput} type="file" accept="image/*" multiple hidden
           onChange={(e) => { p.onAddImages([...(e.target.files ?? [])]); e.target.value = ""; }} />
-        {p.images.length === 0 && <p className="empty">Noch keine Bilder. Wallpaper hochladen, um Themes daraus zu bauen.</p>}
+        {p.images.length === 0 && <p className="empty">{t("Noch keine Bilder. Wallpaper hochladen, um Themes daraus zu bauen.")}</p>}
         <ul className="thumbs">
           {p.images.map((i) => (
             <li key={i.id} className={i.id === p.selectedImage ? "sel" : ""}>
               <button type="button" className="thumb" onClick={() => p.onSelectImage(i.id)} title={i.name}
-                aria-label={`Bild ${i.name} auswählen`} aria-pressed={i.id === p.selectedImage}>
+                aria-label={t("Bild {name} auswählen", { name: i.name })} aria-pressed={i.id === p.selectedImage}>
                 <img src={p.urls[i.id]} alt="" />
                 <span className="dots">{i.sources.map((s) => <i key={s} style={{ background: s }} />)}</span>
               </button>
@@ -66,25 +67,25 @@ export function Library(p: Props) {
       </section>
 
       <section>
-        <h2>Gespeicherte Themes</h2>
-        {p.themes.length === 0 && <p className="empty">Noch keine. Oben rechts „Speichern“.</p>}
+        <h2>{t("Gespeicherte Themes")}</h2>
+        {p.themes.length === 0 && <p className="empty">{t("Noch keine. Oben rechts „Speichern“.")}</p>}
         <ul className="list">
           {p.themes.map((t) => (
             <li key={t.id}>
               <button type="button" className="row" onClick={() => p.onOpenTheme(t)}>
                 <i className="sw" style={{ background: t.settings.source }} />
-                <span>{t.name}<small>{t.settings.scheme} · {t.settings.mode === "dark" ? "dunkel" : "hell"}</small></span>
+                <span>{t.name}<small>{t.settings.scheme} · {t.settings.mode === "dark" ? tr("dunkel") : tr("hell")}</small></span>
               </button>
-              <button type="button" className="x" aria-label={`${t.name} löschen`} onClick={() => p.onDeleteTheme(t.id)}>✕</button>
+              <button type="button" className="x" aria-label={tr("{name} löschen", { name: t.name })} onClick={() => p.onDeleteTheme(t.id)}>✕</button>
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h2>Vorlagen <small>(matugen)</small></h2>
-        <p className="empty">Deine matugen-Vorlagen hochladen (z. B. alacritty.toml) – sie werden mit dem Theme ausgefüllt.</p>
-        <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>Vorlage hinzufügen</button>
+        <h2>{t("Vorlagen")}{" "}<small>{t("(matugen)")}</small></h2>
+        <p className="empty">{t("Deine matugen-Vorlagen hochladen (z. B. alacritty.toml) – sie werden mit dem Theme ausgefüllt.")}</p>
+        <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>{t("Vorlage hinzufügen")}</button>
         <input ref={tplInput} type="file" multiple hidden
           onChange={(e) => { p.onAddTemplates([...(e.target.files ?? [])]); e.target.value = ""; }} />
         <ul className="list">

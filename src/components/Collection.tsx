@@ -5,6 +5,7 @@ import { Hct } from "@material/material-color-utilities";
 import { DEFAULT_FONTS } from "../lib/fonts";
 import type { StoredTheme } from "../lib/store";
 import { Desktop, type Os } from "./Desktop";
+import { t } from "../lib/i18n";
 
 interface Props {
   themes: StoredTheme[];
@@ -37,8 +38,8 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
   if (!themes.length) {
     return (
       <section className="card empty-state">
-        <h2>Noch keine Themes gespeichert</h2>
-        <p className="empty">Bau dir im Bereich Farbe ein Theme und drück oben „Speichern“ (Strg+S) – dann taucht es hier auf.</p>
+        <h2>{t("Noch keine Themes gespeichert")}</h2>
+        <p className="empty">{t("Bau dir im Bereich Farbe ein Theme und drück oben „Speichern“ (Strg+S) – dann taucht es hier auf.")}</p>
       </section>
     );
   }
@@ -46,55 +47,55 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
   return (
     <section className="collection">
       <div className="detail-head">
-        <h2>Sammlung <small>{themes.length} Theme{themes.length > 1 ? "s" : ""}</small></h2>
+        <h2>{t("Sammlung")}{" "}<small>{themes.length}{" "}{t("Theme")}{themes.length > 1 ? "s" : ""}</small></h2>
         <span className="grow" />
-        <input className="name" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen …" aria-label="Themes suchen" />
-        <label className="check"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} /> nur ★</label>
-        <div className="seg" role="group" aria-label="Sortieren">
+        <input className="name" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Suchen …")} aria-label={t("Themes suchen")} />
+        <label className="check"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} />{" "}{t("nur ★")}</label>
+        <div className="seg" role="group" aria-label={t("Sortieren")}>
           {(["neu", "name", "farbe"] as Sort[]).map((s) => (
-            <button key={s} type="button" aria-pressed={sort === s} onClick={() => setSort(s)}>{{ neu: "Neu", name: "Name", farbe: "Farbe" }[s]}</button>
+            <button key={s} type="button" aria-pressed={sort === s} onClick={() => setSort(s)}>{t({ neu: "Neu", name: "Name", farbe: "Farbe" }[s])}</button>
           ))}
         </div>
       </div>
-      {!shown.length && <p className="empty">Nichts gefunden.</p>}
+      {!shown.length && <p className="empty">{t("Nichts gefunden.")}</p>}
       <ul className="theme-grid">
-        {shown.map((t) => {
-          const c = palette(t.settings);
-          const f = t.fonts ?? DEFAULT_FONTS;
+        {shown.map((th) => {
+          const c = palette(th.settings);
+          const f = th.fonts ?? DEFAULT_FONTS;
           return (
-            <li key={t.id} className="theme-card">
-              <button type="button" className="tc-preview" onClick={() => onOpen(t)} title="Öffnen" aria-label={`Theme ${t.name} öffnen`}>
-                <Desktop c={c} os={os} image={t.imageId ? urls[t.imageId] : undefined} fonts={f} />
+            <li key={th.id} className="theme-card">
+              <button type="button" className="tc-preview" onClick={() => onOpen(th)} title={t("Öffnen")} aria-label={t("Theme {name} öffnen", { name: th.name })}>
+                <Desktop c={c} os={os} image={th.imageId ? urls[th.imageId] : undefined} fonts={f} />
               </button>
               <div className="tc-body">
-                <button type="button" className={`star ${t.favorite ? "on" : ""}`} aria-pressed={!!t.favorite}
-                  aria-label={t.favorite ? "Aus Favoriten entfernen" : "Zu Favoriten"} onClick={() => onUpdate({ ...t, favorite: !t.favorite })}>
-                  {t.favorite ? "★" : "☆"}
+                <button type="button" className={`star ${th.favorite ? "on" : ""}`} aria-pressed={!!th.favorite}
+                  aria-label={th.favorite ? t("Aus Favoriten entfernen") : t("Zu Favoriten")} onClick={() => onUpdate({ ...th, favorite: !th.favorite })}>
+                  {th.favorite ? "★" : "☆"}
                 </button>
-                {renaming === t.id ? (
-                  <input className="name" autoFocus defaultValue={t.name} aria-label="Neuer Name"
+                {renaming === th.id ? (
+                  <input className="name" autoFocus defaultValue={th.name} aria-label={t("Neuer Name")}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") { onUpdate({ ...t, name: e.currentTarget.value.trim() || t.name }); setRenaming(undefined); }
+                      if (e.key === "Enter") { onUpdate({ ...th, name: e.currentTarget.value.trim() || th.name }); setRenaming(undefined); }
                       if (e.key === "Escape") setRenaming(undefined);
                     }}
-                    onBlur={(e) => { onUpdate({ ...t, name: e.currentTarget.value.trim() || t.name }); setRenaming(undefined); }} />
+                    onBlur={(e) => { onUpdate({ ...th, name: e.currentTarget.value.trim() || th.name }); setRenaming(undefined); }} />
                 ) : (
-                  <span className="tc-name" onDoubleClick={() => setRenaming(t.id)}>
-                    <b>{t.name}</b>
-                    <small>{SCHEMES[t.settings.scheme].label} · {t.settings.mode === "dark" ? "dunkel" : "hell"} · {f.mono}</small>
+                  <span className="tc-name" onDoubleClick={() => setRenaming(th.id)}>
+                    <b>{th.name}</b>
+                    <small>{SCHEMES[th.settings.scheme].label} · {th.settings.mode === "dark" ? t("dunkel") : t("hell")} · {f.mono}</small>
                   </span>
                 )}
                 <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
               </div>
               <div className="tc-actions">
-                <button type="button" className="primary" onClick={() => onOpen(t)}>Öffnen</button>
-                <button type="button" className="ghost" onClick={() => setRenaming(t.id)}>Umbenennen</button>
-                <button type="button" className="ghost" onClick={() => onDuplicate(t)}>Duplizieren</button>
-                <button type="button" className="ghost" onClick={() => onShare(t)} title="Link mit diesem Theme kopieren">Link</button>
+                <button type="button" className="primary" onClick={() => onOpen(th)}>{t("Öffnen")}</button>
+                <button type="button" className="ghost" onClick={() => setRenaming(th.id)}>{t("Umbenennen")}</button>
+                <button type="button" className="ghost" onClick={() => onDuplicate(th)}>{t("Duplizieren")}</button>
+                <button type="button" className="ghost" onClick={() => onShare(th)} title={t("Link mit diesem Theme kopieren")}>{t("Link")}</button>
                 <span className="grow" />
-                {confirmDel === t.id
-                  ? <button type="button" className="ghost danger" onClick={() => { onDelete(t.id); setConfirmDel(undefined); }}>Löschen?</button>
-                  : <button type="button" className="ghost" onClick={() => setConfirmDel(t.id)} aria-label={`${t.name} löschen`} title="Löschen">✕</button>}
+                {confirmDel === th.id
+                  ? <button type="button" className="ghost danger" onClick={() => { onDelete(th.id); setConfirmDel(undefined); }}>{t("Löschen?")}</button>
+                  : <button type="button" className="ghost" onClick={() => setConfirmDel(th.id)} aria-label={t("{name} löschen", { name: th.name })} title={t("Löschen")}>✕</button>}
               </div>
             </li>
           );

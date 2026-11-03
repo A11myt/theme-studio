@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialog } from "../lib/useDialog";
 import { installNerdFont, nerdFonts, type NerdFont } from "../lib/platform";
+import { t } from "../lib/i18n";
 
 interface Props {
   onClose: () => void;
@@ -38,13 +39,13 @@ export function NerdFonts({ onClose, onInstalled }: Props) {
   const install = async (f: NerdFont) => {
     if (f.size > 150e6) {
       const { ask } = await import("@tauri-apps/plugin-dialog");
-      if (!(await ask(`${f.name} ist ${mb(f.size)} groß (Download). Installiert werden davon nur 8 Dateien. Fortfahren?`, { title: "Nerd Fonts" }))) return;
+      if (!(await ask(t("{name} ist {size} groß (Download). Installiert werden davon nur 8 Dateien. Fortfahren?", { name: f.name, size: mb(f.size) }), { title: "Nerd Fonts" }))) return;
     }
     setBusy(f.name);
     setError("");
     try {
       const r = await installNerdFont(f);
-      setDone((d) => ({ ...d, [f.name]: `${r.files} Dateien installiert` }));
+      setDone((d) => ({ ...d, [f.name]: t("{n} Dateien installiert", { n: r.files }) }));
       onInstalled(f.name);
     } catch (e) {
       setError(`${f.name}: ${String(e)}`);
@@ -54,29 +55,29 @@ export function NerdFonts({ onClose, onInstalled }: Props) {
   };
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="Nerd Fonts" onClick={() => !busy && onClose()}>
+    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("Nerd Fonts")} onClick={() => !busy && onClose()}>
       <div ref={sheetRef} tabIndex={-1} className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="wh-head">
-          <h2>Nerd Fonts {list[0] && <small>{list[0].version}</small>}</h2>
-          <input className="name grow" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen, z. B. Hack, JetBrains, Fira …" aria-label="Schrift suchen" autoFocus />
-          <button type="button" className="ghost" onClick={onClose} disabled={!!busy} aria-label="Schließen">✕</button>
+          <h2>{t("Nerd Fonts")}{" "}{list[0] && <small>{list[0].version}</small>}</h2>
+          <input className="name grow" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Suchen, z. B. Hack, JetBrains, Fira …")} aria-label={t("Schrift suchen")} autoFocus />
+          <button type="button" className="ghost" onClick={onClose} disabled={!!busy} aria-label={t("Schließen")}>✕</button>
         </div>
         {error && <p className="error">{error}</p>}
         <ul className="nf-list">
-          {!list.length && !error && <li className="empty">lädt Liste von GitHub …</li>}
+          {!list.length && !error && <li className="empty">{t("lädt Liste von GitHub …")}</li>}
           {shown.map((f) => (
             <li key={f.name}>
-              <span><b>{f.name}</b><small>{mb(f.size)} Download</small></span>
+              <span><b>{f.name}</b><small>{mb(f.size)}{" "}{t("Download")}</small></span>
               {done[f.name]
                 ? <small className="ok">✓ {done[f.name]}</small>
                 : <button type="button" className="ghost" disabled={!!busy} onClick={() => install(f)}>
-                    {busy === f.name ? "installiert …" : "Installieren"}
+                    {busy === f.name ? t("installiert …") : t("Installieren")}
                   </button>}
             </li>
           ))}
         </ul>
         <div className="wh-foot">
-          <small className="empty">Installiert nur Mono + Propo (Regular, Bold, Italic, Bold Italic) in deinen Benutzer-Schriftordner · ryanoasis/nerd-fonts</small>
+          <small className="empty">{t("Installiert nur Mono + Propo (Regular, Bold, Italic, Bold Italic) in deinen Benutzer-Schriftordner · ryanoasis/nerd-fonts")}</small>
         </div>
       </div>
     </div>

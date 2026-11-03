@@ -9,6 +9,7 @@ import { loadSettings, type AppSettings } from "./lib/settings";
 import { vscodeSettings, vscodeVsix } from "./lib/vscode";
 import { readShareLink, shareLink } from "./lib/share";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
+import { t as tr } from "./lib/i18n";
 
 
 export const DEFAULT: ThemeSettings = { source: "#6750a4", scheme: "tonal-spot", mode: "dark", contrast: 0 };
@@ -142,7 +143,7 @@ export function useStudio() {
       setImages((prev) => [...added, ...prev]);
       selectImage(added[0]);
     } catch (e) {
-      flash(`Bild konnte nicht gelesen werden: ${errText(e)}`, 4000);
+      flash(tr("Bild konnte nicht gelesen werden: {e}", { e: errText(e) }), 4000);
     } finally {
       setBusy(false);
     }
@@ -160,7 +161,7 @@ export function useStudio() {
     const t: StoredTheme = { id: uid(), name: name.trim() || "Theme", imageId, settings, fonts, created: Date.now() };
     await db.putTheme(t);
     setThemes((prev) => [t, ...prev]);
-    flash(`„${t.name}“ gespeichert`);
+    flash(tr("„{name}“ gespeichert", { name: t.name }));
   };
 
   const openTheme = (t: StoredTheme) => {
@@ -176,10 +177,10 @@ export function useStudio() {
   };
 
   const duplicateTheme = async (t: StoredTheme) => {
-    const copy: StoredTheme = { ...t, id: uid(), name: `${t.name} (Kopie)`, favorite: false, created: Date.now() };
+    const copy: StoredTheme = { ...t, id: uid(), name: tr("{name} (Kopie)", { name: t.name }), favorite: false, created: Date.now() };
     await db.putTheme(copy);
     setThemes((prev) => [copy, ...prev]);
-    flash(`„${copy.name}“ angelegt`);
+    flash(tr("„{name}“ angelegt", { name: copy.name }));
   };
 
   const deleteTheme = async (id: string) => {
@@ -194,9 +195,9 @@ export function useStudio() {
       setSettings(t.settings);
       if (t.fonts) setFonts(t.fonts);
       setName(t.name);
-      flash(`„${t.name}“ importiert`);
+      flash(tr("„{name}“ importiert", { name: t.name }));
     } catch (e) {
-      flash(`Import fehlgeschlagen: ${errText(e)}`, 5000);
+      flash(tr("Import fehlgeschlagen: {e}", { e: errText(e) }), 5000);
     }
   };
 
@@ -225,7 +226,7 @@ export function useStudio() {
       added.push(t);
     }
     setTemplates((prev) => [...prev, ...added].sort((a, b) => a.name.localeCompare(b.name)));
-    if (added.length) flash(`${added.length} Vorlage${added.length > 1 ? "n" : ""} hinzugefügt`);
+    if (added.length) flash(tr(added.length > 1 ? "{n} Vorlagen hinzugefügt" : "1 Vorlage hinzugefügt", { n: added.length }));
   };
 
   const deleteTemplate = async (id: string) => {
@@ -243,9 +244,9 @@ export function useStudio() {
       setName(t.name);
       setImageId(undefined);
       setTab("farbe");
-      flash(`Geteiltes Theme „${t.name}“ geöffnet`, 3000);
+      flash(tr("Geteiltes Theme „{name}“ geöffnet", { name: t.name }), 3000);
     } catch (e) {
-      flash(`Link ungültig: ${errText(e)}`, 5000);
+      flash(tr("Link ungültig: {e}", { e: errText(e) }), 5000);
     }
     return true;
   };
@@ -267,29 +268,29 @@ export function useStudio() {
   const shareTheme = async (n: string, st: ThemeSettings, f: Fonts) => {
     try {
       await copyText(shareLink(n, st, f));
-      flash("Link kopiert – wer ihn öffnet, sieht genau dieses Theme (ohne Bild)", 3500);
+      flash(tr("Link kopiert – wer ihn öffnet, sieht genau dieses Theme (ohne Bild)"), 3500);
     } catch {
-      flash("Kopieren nicht möglich");
+      flash(tr("Kopieren nicht möglich"));
     }
   };
 
   const copy = async (text: string) => {
     try {
       await copyText(text);
-      flash("Kopiert");
+      flash(tr("Kopiert"));
     } catch {
-      flash("Kopieren nicht möglich");
+      flash(tr("Kopieren nicht möglich"));
     }
   };
 
   // Speichern in den Export-Ordner (App) bzw. als Download (Browser)
   const saveOpts = { dir: app.exportDir, ask: app.askOnSave };
-  const report = (where: string | null) => where && flash(isTauri ? `Gespeichert: ${where}` : "Heruntergeladen", 3500);
+  const report = (where: string | null) => where && flash(isTauri ? tr("Gespeichert: {where}", { where }) : tr("Heruntergeladen"), 3500);
   const saveFile = (filename: string, text: string) =>
-    void saveText(filename, text, saveOpts).then(report).catch((e) => flash(`Speichern fehlgeschlagen: ${errText(e)}`, 5000));
+    void saveText(filename, text, saveOpts).then(report).catch((e) => flash(tr("Speichern fehlgeschlagen: {e}", { e: errText(e) }), 5000));
   const saveVsix = () => {
     const v = vscodeVsix(themeName, settings, pal);
-    void saveBytes(v.filename, v.bytes, saveOpts).then(report).catch((e) => flash(`Speichern fehlgeschlagen: ${errText(e)}`, 5000));
+    void saveBytes(v.filename, v.bytes, saveOpts).then(report).catch((e) => flash(tr("Speichern fehlgeschlagen: {e}", { e: errText(e) }), 5000));
   };
 
   const themeName = name.trim() || "Theme";

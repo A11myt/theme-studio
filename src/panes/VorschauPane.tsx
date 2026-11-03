@@ -5,6 +5,7 @@ import { TerminalPreview } from "../components/TerminalPreview";
 import { onColor, palette, SCHEMES, type Mode } from "../lib/color";
 import { grade, PARTNER, ratio } from "../lib/contrast";
 import { PALETTE_GROUPS, type Studio } from "../useStudio";
+import { t } from "../lib/i18n";
 
 export function VorschauPane({ s }: { s: Studio }) {
   const { settings, os, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
@@ -12,9 +13,9 @@ export function VorschauPane({ s }: { s: Studio }) {
     <div className="pane">
         <section className="card detail" id="vorschau">
           <div className="detail-head">
-            <h2>Vorschau <small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"}</small></h2>
+            <h2>{t("Vorschau")}{" "}<small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")}</small></h2>
             <span className="grow" />
-            <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} /> Hell und dunkel nebeneinander</label>
+            <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} />{" "}{t("Hell und dunkel nebeneinander")}</label>
           </div>
           {bothModes ? (
             <div className="big">
@@ -32,7 +33,7 @@ export function VorschauPane({ s }: { s: Studio }) {
             <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
             <Readability c={pal} />
           </div>
-          <h3>Programme</h3>
+          <h3>{t("Programme")}</h3>
           <AppPreviews c={pal} fonts={fonts} />
           {editRole && (() => {
             const cur = (pal as Record<string, string>)[editRole];
@@ -41,21 +42,21 @@ export function VorschauPane({ s }: { s: Studio }) {
             return (
               <div className="role-editor">
                 <b>{editRole.replace(/_/g, " ")}</b>
-                <input type="color" value={cur} onChange={(e) => setOverride(editRole, e.target.value)} aria-label="Farbe wählen" />
+                <input type="color" value={cur} onChange={(e) => setOverride(editRole, e.target.value)} aria-label={t("Farbe wählen")} />
                 <code>{cur}</code>
-                {settings.overrides?.[editRole] && <small className="empty">vorher <i className="sw inline" style={{ background: orig }} /> {orig}</small>}
-                {partner && <span className={`badge ${grade(ratio(cur, partner))}`}>Kontrast {ratio(cur, partner).toFixed(1)}</span>}
+                {settings.overrides?.[editRole] && <small className="empty">{t("vorher")}{" "}<i className="sw inline" style={{ background: orig }} /> {orig}</small>}
+                {partner && <span className={`badge ${grade(ratio(cur, partner))}`}>{t("Kontrast")}{" "}{ratio(cur, partner).toFixed(1)}</span>}
                 <span className="grow" />
-                <button type="button" className="ghost" onClick={() => copy(cur)}>Kopieren</button>
-                {settings.overrides?.[editRole] && <button type="button" className="ghost" onClick={() => setOverride(editRole, undefined)}>Zurücksetzen</button>}
-                <button type="button" className="ghost" onClick={() => setEditRole(undefined)} aria-label="Schließen">✕</button>
+                <button type="button" className="ghost" onClick={() => copy(cur)}>{t("Kopieren")}</button>
+                {settings.overrides?.[editRole] && <button type="button" className="ghost" onClick={() => setOverride(editRole, undefined)}>{t("Zurücksetzen")}</button>}
+                <button type="button" className="ghost" onClick={() => setEditRole(undefined)} aria-label={t("Schließen")}>✕</button>
               </div>
             );
           })()}
           <div className="palette">
             {PALETTE_GROUPS.map(([title, roles]) => (
               <div key={title}>
-                <h3>{title}</h3>
+                <h3>{t(title)}</h3>
                 <div className="swatches">
                   {roles.map((r) => {
                     const hex = (pal as Record<string, string>)[r];
@@ -64,7 +65,7 @@ export function VorschauPane({ s }: { s: Studio }) {
                     return (
                       <button key={r} type="button" className={`swatch ${editRole === r ? "editing" : ""}`} style={{ background: hex, color: partner ?? onColor(hex) }}
                         onClick={() => setEditRole(editRole === r ? undefined : r)} aria-pressed={editRole === r}
-                        title={`Klicken zum Bearbeiten${partner ? ` · Kontrast zu ${PARTNER[r].replace(/_/g, " ")}: ${cr.toFixed(1)}` : ""}`}>
+                        title={t("Klicken zum Bearbeiten") + (partner ? t(" · Kontrast zu {role}: {r}", { role: PARTNER[r].replace(/_/g, " "), r: cr.toFixed(1) }) : "")}>
                         <span>{settings.overrides?.[r] ? "✎ " : ""}{r.replace(/_/g, " ")}</span>
                         <code>{hex}{partner && <b className={`dot ${grade(cr)}`} />}</code>
                       </button>
@@ -75,7 +76,7 @@ export function VorschauPane({ s }: { s: Studio }) {
             ))}
           </div>
         </section>
-        <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("export")}>Weiter: Exportieren →</button></div>
+        <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("export")}>{t("Weiter: Exportieren →")}</button></div>
     </div>
   );
 }

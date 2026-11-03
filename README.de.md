@@ -38,6 +38,8 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **Themes per Link teilen** (Webseite öffnet sie direkt, in der App Strg+V)
 - **Tastenkürzel**: 1–9 Variante (im Bereich Farbe), D/H dunkel/hell, Z Zufall, Strg+S speichern, Alt+1–6 Bereiche
   (Einzeltasten-Kürzel in den Einstellungen abschaltbar)
+- **Deutsch und Englisch**: folgt der Systemsprache, umschaltbar in ⚙ Einstellungen (`t("…")` mit deutschem Text als Schlüssel,
+  `src/lib/i18n.en.ts`; ein Test meldet fehlende Übersetzungen)
 - **Barrierefrei**: Tastatur überall, Fokus in Dialogen, beschriftete Knöpfe, Kontraste nach WCAG
 - **Schrift** wie fontgen: Oberfläche, Mono, Akzent + Größen; deine Profile iosevka/hack/jetbrains als Vorlage,
   Auswahl aus den installierten Schriften, Vorschau in den Mini-Desktops. Gespeichert wird nur der Name.

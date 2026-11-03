@@ -1,5 +1,6 @@
 // wallhaven.cc ohne Anmeldung – gleiche Filter wie der Launcher auf dem Laptop (scripts/wallhaven.py):
 // nur jugendfrei, mind. 1920×1080, 16:9/16:10, Allgemein/Anime/Personen; leer = Toplist des letzten Monats.
+import { t } from "./i18n";
 import { isTauri, netFetch } from "./platform";
 export interface WallhavenItem {
   id: string;
@@ -57,7 +58,7 @@ export async function search(query: string, page = 1, color?: string): Promise<W
     params.set("topRange", "1M");
   }
   const r = await netFetch(`https://wallhaven.cc/api/v1/search?${params}`);
-  if (!r.ok) throw new Error(r.status === 429 ? "zu viele Anfragen – kurz warten" : `wallhaven antwortet mit ${r.status}`);
+  if (!r.ok) throw new Error(r.status === 429 ? t("zu viele Anfragen – kurz warten") : t("wallhaven antwortet mit {s}", { s: r.status }));
   const d = await r.json();
   return {
     items: d.data.map((x: any) => ({

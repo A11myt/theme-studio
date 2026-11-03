@@ -15,21 +15,23 @@ import { TerminalPane } from "./panes/TerminalPane";
 import { VorschauPane } from "./panes/VorschauPane";
 import { ExportPane } from "./panes/ExportPane";
 import { useStudio } from "./useStudio";
+import { t, useLang } from "./lib/i18n";
 
 export function App() {
+  useLang();                       // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
   const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys } = s;
 
   return (
     <div className="app" style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
-      <a className="skip" href="#bereich">Zum Inhalt springen</a>
+      <a className="skip" href="#bereich">{t("Zum Inhalt springen")}</a>
       <header className="top">
         <h1>Theme Studio</h1>
-        <div className="seg" role="group" aria-label="Vorschau für">
+        <div className="seg" role="group" aria-label={t("Vorschau für")}>
           <button type="button" aria-pressed={os === "linux"} onClick={() => setOs("linux")}>Linux</button>
           <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
         </div>
-        <nav className="tabs-nav" role="tablist" aria-label="Bereiche"
+        <nav className="tabs-nav" role="tablist" aria-label={t("Bereiche")}
           onKeyDown={(e) => {
             // Pfeiltasten/Pos1/Ende wechseln den Bereich (WAI-ARIA Tabs)
             const i = TABS.findIndex(([id]) => id === tab);
@@ -42,22 +44,22 @@ export function App() {
           }}>
           {TABS.map(([id, label], i) => (
             <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
-              tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${label} (Alt+${i + 1})`}>{label}</button>
+              tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>{t(label)}</button>
           ))}
         </nav>
         <span className="grow" />
         <div className="tools">
-          <button type="button" className="ghost" onClick={undo} disabled={!past.current.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">↶</button>
-          <button type="button" className="ghost" onClick={redo} disabled={!future.current.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">↷</button>
-          <button type="button" className="ghost" onClick={surprise} title="Zufälliges Theme (Z)">Zufall</button>
-          <button type="button" className="ghost" onClick={() => importInput.current?.click()} title=".theme.json einlesen">Import</button>
+          <button type="button" className="ghost" onClick={undo} disabled={!past.current.length} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}>↶</button>
+          <button type="button" className="ghost" onClick={redo} disabled={!future.current.length} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}>↷</button>
+          <button type="button" className="ghost" onClick={surprise} title={t("Zufälliges Theme (Z)")}>{t("Zufall")}</button>
+          <button type="button" className="ghost" onClick={() => importInput.current?.click()} title={t(".theme.json einlesen")}>Import</button>
           <input ref={importInput} type="file" accept=".json,application/json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importTheme(f); e.target.value = ""; }} />
         </div>
-        <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label="Einstellungen" title="Einstellungen">⚙</button>
-        <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name des Themes" aria-label="Name des Themes" />
-        <button type="button" className={isTauri ? "ghost" : "primary"} onClick={saveTheme} title="Im Studio speichern (Strg+S)">Speichern</button>
-        {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title="Auf diesem Rechner anwenden">Anwenden</button>}
+        <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label={t("Einstellungen")} title={t("Einstellungen")}>⚙</button>
+        <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Name des Themes")} aria-label={t("Name des Themes")} />
+        <button type="button" className={isTauri ? "ghost" : "primary"} onClick={saveTheme} title={t("Im Studio speichern (Strg+S)")}>{t("Speichern")}</button>
+        {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title={t("Auf diesem Rechner anwenden")}>{t("Anwenden")}</button>}
       </header>
 
       <Library images={images} urls={urls} themes={themes} templates={templates} selectedImage={imageId} busy={busy}
@@ -78,12 +80,12 @@ export function App() {
       {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} initialColor={wallhaven.color}
         themeColors={[effSource, ...(image?.sources ?? [])]} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
       {showWizard && <PromptWizard value={prompt} c={pal} fonts={fonts} onClose={() => setShowWizard(false)}
-        onDone={(o) => { setPrompt(o); flash("Prompt übernommen"); }} />}
+        onDone={(o) => { setPrompt(o); flash(t("Prompt übernommen")); }} />}
       {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
       {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
-        onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(`${fam} Nerd Font installiert`, 3000); }} />}
+        onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(t("{fam} Nerd Font installiert", { fam }), 3000); }} />}
       {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys} onClose={() => setShowSettings(false)}
-        onSave={(s) => { setApp(s); storeSettings(s); flash("Einstellungen gespeichert"); }} />}
+        onSave={(s) => { setApp(s); storeSettings(s); flash(t("Einstellungen gespeichert")); }} />}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite">{toast}</div>
     </div>
   );

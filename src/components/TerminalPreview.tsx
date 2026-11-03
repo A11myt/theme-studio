@@ -4,9 +4,10 @@ import type { Palette, ThemeSettings } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
 import type { PromptOptions } from "../lib/prompt";
 import { PromptView, TransientLine } from "./PromptView";
+import { t } from "../lib/i18n";
 
-export function TerminalPreview({ c, t, fonts, prompt }: { c: Palette; t: ThemeSettings; fonts: Fonts; prompt?: PromptOptions }) {
-  const a = ansi(c, t);
+export function TerminalPreview({ c, t: theme, fonts, prompt }: { c: Palette; t: ThemeSettings; fonts: Fonts; prompt?: PromptOptions }) {
+  const a = ansi(c, theme);
   const [, red, green, yellow, blue, magenta, cyan] = a.normal;
   const S = (color: string, text: string, bold = false) => <span style={{ color, fontWeight: bold ? 600 : undefined }}>{text}</span>;
   return (
@@ -16,7 +17,7 @@ export function TerminalPreview({ c, t, fonts, prompt }: { c: Palette; t: ThemeS
           <TransientLine o={prompt} c={c} command="ls" />
           <div><span style={{ color: blue, fontWeight: 600 }}>hypr/</span>  <span style={{ color: blue, fontWeight: 600 }}>quickshell/</span>  <span style={{ color: green, fontWeight: 600 }}>install.sh</span>  <span style={{ color: magenta }}>wall.png</span></div>
           <TransientLine o={prompt} c={c} command="git push" />
-          <div><span style={{ color: red }}>fatal:</span> keine Verbindung</div>
+          <div><span style={{ color: red }}>fatal:</span>{" "}{t("keine Verbindung")}</div>
           <PromptView o={prompt} c={c} failed />
         </div>
       ) : (

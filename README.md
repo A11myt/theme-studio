@@ -23,7 +23,7 @@ The source colors are **exactly** what matugen picks, because Theme Studio runs 
   [Releases](https://github.com/A11myt/theme-studio/releases)
 - **Linux**: AppImage or `.deb` from Releases, or build it yourself (see below)
 
-> The UI is currently in German. English UI is planned.
+The interface is available in **English and German** (follows your system language; switch in ⚙ Settings).
 
 ## Features
 

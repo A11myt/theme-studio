@@ -5,6 +5,7 @@ import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
 import { CHARS, RIGHT_LABELS, type PromptOptions, type RightItem } from "../lib/prompt";
 import { PromptView } from "./PromptView";
+import { t } from "../lib/i18n";
 
 interface Props {
   value: PromptOptions;
@@ -17,7 +18,7 @@ interface Props {
 interface Choice { label: string; hint?: string; patch: Partial<PromptOptions> }
 interface Step { id: string; title: string; when?: (o: PromptOptions) => boolean; choices?: (o: PromptOptions) => Choice[]; multi?: true }
 
-const STEPS: Step[] = [
+export const STEPS: Step[] = [
   { id: "style", title: "Welcher Stil?", choices: () => [
     { label: "Lean", hint: "ohne Hintergründe, wie jetzt", patch: { style: "lean" } },
     { label: "Classic", hint: "dunkle Blöcke mit Trennern", patch: { style: "classic" } },
@@ -50,8 +51,8 @@ const STEPS: Step[] = [
     { label: "10:24 AM", patch: { time: "12", right: [...new Set<RightItem>([...o.right, "time"])] } },
     { label: "Keine", patch: { right: o.right.filter((r) => r !== "time") } },
   ] },
-  { id: "transient", title: "Ältere Prompts zusammenfalten?", choices: (o) => [
-    { label: "Ja", hint: `nur „${o.char}“ bleibt stehen – übersichtlicher Verlauf`, patch: { transient: true } },
+  { id: "transient", title: "Ältere Prompts zusammenfalten?", choices: () => [
+    { label: "Ja", hint: "nur „{char}“ bleibt stehen – übersichtlicher Verlauf", patch: { transient: true } },
     { label: "Nein", hint: "jeder Prompt bleibt vollständig", patch: { transient: false } },
   ] },
 ];
@@ -89,45 +90,44 @@ export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
   );
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="Prompt-Assistent" onClick={onClose}>
+    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("Prompt-Assistent")} onClick={onClose}>
       <div ref={sheetRef} tabIndex={-1} className="sheet wizard" onClick={(e) => e.stopPropagation()}>
         <div className="wh-head">
-          <h2>Prompt-Assistent <small>{done ? "Fertig" : `Schritt ${i + 1} von ${visible.length}`}</small></h2>
+          <h2>{t("Prompt-Assistent")}{" "}<small>{done ? "Fertig" : t("Schritt {i} von {n}", { i: i + 1, n: visible.length })}</small></h2>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} aria-label="Schließen">✕</button>
+          <button type="button" className="ghost" onClick={onClose} aria-label={t("Schließen")}>✕</button>
         </div>
         <div className="wiz-progress"><i style={{ width: `${(Math.min(i, visible.length) / visible.length) * 100}%` }} /></div>
         <div className="pad">
           {done ? (
             <>
-              <h3>So sieht dein Prompt aus</h3>
+              <h3>{t("So sieht dein Prompt aus")}</h3>
               {term(o)}
-              <p className="empty">Mit „Übernehmen“ wird er im Studio eingeschaltet. Auf dem Rechner landet er beim nächsten „Anwenden“
-                (Linux: Ergänzung zu ~/.p10k.zsh, Windows: oh-my-posh über wintheme) – oder über die Dateien im Bereich Terminal.</p>
+              <p className="empty">{t("Mit „Übernehmen“ wird er im Studio eingeschaltet. Auf dem Rechner landet er beim nächsten „Anwenden“ (Linux: Ergänzung zu ~/.p10k.zsh, Windows: oh-my-posh über wintheme) – oder über die Dateien im Bereich Terminal.")}</p>
             </>
           ) : step.multi ? (
             <>
-              <h3>{step.title}</h3>
+              <h3>{t(step.title)}</h3>
               {term(o)}
               <div className="wiz-multi">
                 {(Object.keys(RIGHT_LABELS) as RightItem[]).map((r) => (
                   <label key={r} className="check">
                     <input type="checkbox" checked={o.right.includes(r)}
                       onChange={(e) => setO((x) => ({ ...x, right: e.target.checked ? [...x.right, r] : x.right.filter((y) => y !== r) }))} />
-                    {RIGHT_LABELS[r]}
+                    {t(RIGHT_LABELS[r])}
                   </label>
                 ))}
               </div>
             </>
           ) : (
             <>
-              <h3>{step.title}</h3>
+              <h3>{t(step.title)}</h3>
               <div className="wiz-choices">
                 {step.choices!(o).map((ch, k) => {
                   const preview = { ...o, ...ch.patch };
                   return (
                     <button key={k} type="button" className="wiz-choice" onClick={() => next(ch.patch)}>
-                      <span className="wiz-label"><kbd>{k + 1}</kbd><b>{ch.label}</b>{ch.hint && <small>{ch.hint}</small>}</span>
+                      <span className="wiz-label"><kbd>{k + 1}</kbd><b>{t(ch.label)}</b>{ch.hint && <small>{t(ch.hint, { char: o.char })}</small>}</span>
                       {term(preview)}
                     </button>
                   );
@@ -137,10 +137,10 @@ export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
           )}
         </div>
         <div className="wh-foot">
-          <button type="button" className="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0}>← Zurück</button>
+          <button type="button" className="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0}>{t("← Zurück")}</button>
           <span className="grow" />
-          {!done && <button type="button" className="ghost" onClick={() => next()}>{step.multi ? "Weiter →" : "Überspringen"}</button>}
-          {done && <button type="button" className="primary" onClick={() => { onDone(o); onClose(); }}>Übernehmen</button>}
+          {!done && <button type="button" className="ghost" onClick={() => next()}>{step.multi ? t("Weiter →") : t("Überspringen")}</button>}
+          {done && <button type="button" className="primary" onClick={() => { onDone(o); onClose(); }}>{t("Übernehmen")}</button>}
         </div>
       </div>
     </div>

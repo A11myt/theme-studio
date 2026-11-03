@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
+import { t } from "../lib/i18n";
 
 export type Os = "linux" | "windows";
 
@@ -26,17 +27,17 @@ export function Desktop({ c, os, image, size = "small", fonts }: Props) {
 
   return (
     <div className={`desk desk-${os} desk-${size}`} style={vars} role="img"
-      aria-label={`${os === "linux" ? "Linux" : "Windows"}-Vorschau, Akzent ${c.primary}`}>
+      aria-label={t("{os}-Vorschau, Akzent {c}", { os: os === "linux" ? "Linux" : "Windows", c: c.primary })}>
       {os === "linux" ? <LinuxBar /> : <WindowsBar />}
       <div className="tiles">
         <div className="win focused">
           {os === "windows" && <div className="tabs"><span className="tab on">pwsh</span><span className="tab">+</span></div>}
           <div className="term">
             <span className="l1">{os === "linux" ? "╭─ ~/dotfiles  main" : "╭─ ~\\dotfiles  main"}</span>
-            <span className="l2">╰─❯ <b>wallthemes</b> ✓</span>
-            <span className="l3">3 Dateien eingefärbt</span>
+            <span className="l2">╰─❯ <b>{t("wallthemes")}</b> ✓</span>
+            <span className="l3">{t("3 Dateien eingefärbt")}</span>
           </div>
-          <span className="btn">Öffnen</span>
+          <span className="btn">{t("Öffnen")}</span>
         </div>
         <div className="win">
           <div className="lines"><i style={{ width: "70%" }} /><i style={{ width: "45%" }} /><i style={{ width: "60%" }} /></div>

@@ -1,6 +1,7 @@
 // Ausgaben für Linux (matugen/Alacritty) und Windows (wintheme, Windows Terminal, komorebi).
 // Zuordnungen wie in dotfiles (matugen-Vorlagen) und dotfiles-windows (wintheme.py).
 import { ansi } from "./ansi";
+import { t as tr } from "./i18n";
 import { effectiveSource, palette, SCHEMES, type Palette, type ThemeSettings } from "./color";
 import { DEFAULT_FONTS, fontValues, type Fonts } from "./fonts";
 
@@ -11,6 +12,7 @@ export interface ExportFile {
   group: ExportGroup;
   label: string;
   hint: string;
+  vars?: Record<string, string>;   // Platzhalter im Hinweis (Übersetzung)
   filename: string;
   text: string;
 }
@@ -114,7 +116,7 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
       filename: `${s}.windows-terminal-font.json`, text: json({ font: { face: f.mono, size: f.monoSize + 1 } }),
     },
     {
-      id: "fontgen", group: "linux", label: "fontgen-Profil", hint: "in ~/.config/fontgen/config.toml einfügen, dann fontgen use " + s,
+      id: "fontgen", group: "linux", label: "fontgen-Profil", hint: "in ~/.config/fontgen/config.toml einfügen, dann fontgen use {name}", vars: { name: s },
       filename: `${s}.fontgen.toml`, text: fontgenProfile(name, f),
     },
     {
@@ -173,7 +175,7 @@ export function parseThemeFile(text: string): { name: string; settings: ThemeSet
   const d = JSON.parse(text);
   const hex = /^#[0-9a-f]{6}$/i;
   if (!hex.test(d.source ?? "") || !(d.scheme in SCHEMES) || !["dark", "light"].includes(d.mode)) {
-    throw new Error("keine Theme-Studio-Datei (source/scheme/mode fehlen)");
+    throw new Error(tr("keine Theme-Studio-Datei (source/scheme/mode fehlen)"));
   }
   const f = d.fonts;
   const fonts = f && typeof f.mono === "string" ? {

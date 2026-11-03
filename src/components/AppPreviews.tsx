@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
+import { t } from "../lib/i18n";
 
 interface Props {
   c: Palette;
@@ -51,10 +52,10 @@ export function AppPreviews({ c, fonts }: Props) {
               <span style={{ color: c.outline }}>color.ts</span>
             </div>
             <pre className="vs-code" style={{ fontFamily: mono }}>
-              {C("// Palette aus der Ausgangsfarbe")}{"\n"}
+              {C(t("// Palette aus der Ausgangsfarbe"))}{"\n"}
               {K("export function ")}{F("palette")}({P("t")}: {T("ThemeSettings")}) {"{"}{"\n"}
-              {"  "}{K("const ")}s = {K("new ")}{T("Scheme")}({P("t")}.{P("source")}, {N("0.5")});{"\n"}
-              {"  "}{K("return ")}{F("format")}(s, {S('"#rrggbb"')});{"\n"}
+              {"  "}{K("const ")}s ={" "}{K("new ")}{T("Scheme")}({P("t")}.{P("source")}, {N("0.5")});{"\n"}
+              {"  "}{K("return ")}{F("format")}(s,{" "}{S('"#rrggbb"')});{"\n"}
               {"}"}
             </pre>
             <div className="vs-status" style={{ background: c.primary, color: c.on_primary }}>⎇ main · TypeScript</div>
@@ -75,7 +76,7 @@ export function AppPreviews({ c, fonts }: Props) {
         </div>
         <div className="ff-page" style={{ background: c.background }}>
           <b style={{ color: c.on_surface }}>theme-studio</b>
-          <span style={{ color: c.on_surface_variant }}>Themes aus eigenen Bildern bauen</span>
+          <span style={{ color: c.on_surface_variant }}>{t("Themes aus eigenen Bildern bauen")}</span>
           <span><a style={{ color: c.primary }}>README.md</a> · <a style={{ color: c.primary }}>LICENSE</a></span>
           <span className="ff-btn" style={{ background: c.primary, color: c.on_primary }}>Code ▾</span>
         </div>
@@ -85,15 +86,15 @@ export function AppPreviews({ c, fonts }: Props) {
       <Frame title="Obsidian" c={c} style={{ fontFamily: ui }}>
         <div className="ob">
           <div className="ob-side" style={{ background: c.surface_container_low, color: c.on_surface_variant }}>
-            <span>📁 Termine</span>
-            <span style={{ background: c.surface_container_high, color: c.on_surface }}>📄 Ideen</span>
-            <span>📄 Einkauf</span>
+            <span>{t("📁 Termine")}</span>
+            <span style={{ background: c.surface_container_high, color: c.on_surface }}>{t("📄 Ideen")}</span>
+            <span>{t("📄 Einkauf")}</span>
           </div>
           <div className="ob-note">
-            <b style={{ color: c.primary, fontFamily: cssFont(fonts.accent, "sans-serif") }}>Ideen</b>
-            <span style={{ color: c.on_surface }}>Mehr Farbe ins <a style={{ color: c.secondary, textDecoration: "underline" }}>[[Theme Studio]]</a>.</span>
-            <span style={{ color: c.on_surface }}><mark style={{ background: `${c.tertiary}55`, color: c.on_surface }}>markiert</mark> und <code style={{ background: c.surface_container_high, color: c.tertiary, fontFamily: mono }}>code</code></span>
-            <span style={{ color: c.on_surface_variant }}>☑ <s>Nerd Fonts</s>　☐ Release</span>
+            <b style={{ color: c.primary, fontFamily: cssFont(fonts.accent, "sans-serif") }}>{t("Ideen")}</b>
+            <span style={{ color: c.on_surface }}>{t("Mehr Farbe ins")}{" "}<a style={{ color: c.secondary, textDecoration: "underline" }}>[[Theme Studio]]</a>.</span>
+            <span style={{ color: c.on_surface }}><mark style={{ background: `${c.tertiary}55`, color: c.on_surface }}>{t("markiert")}</mark>{" "}{t("und")}{" "}<code style={{ background: c.surface_container_high, color: c.tertiary, fontFamily: mono }}>code</code></span>
+            <span style={{ color: c.on_surface_variant }}>☑ <s>{t("Nerd Fonts")}</s>{" "}{t("☐ Release")}</span>
             <span className="ob-tag" style={{ background: c.secondary_container, color: c.on_secondary_container }}>#projekt</span>
           </div>
         </div>
@@ -112,11 +113,11 @@ export function AppPreviews({ c, fonts }: Props) {
             <span># hilfe</span>
           </div>
           <div className="dc-chat">
-            <span><b style={{ color: c.primary }}>A11myt</b> <small style={{ color: c.outline }}>heute</small></span>
-            <span style={{ color: c.on_surface }}>neues Theme ist live 🎨</span>
+            <span><b style={{ color: c.primary }}>A11myt</b> <small style={{ color: c.outline }}>{t("heute")}</small></span>
+            <span style={{ color: c.on_surface }}>{t("neues Theme ist live 🎨")}</span>
             <span><b style={{ color: c.tertiary }}>Gast</b></span>
-            <span style={{ color: c.on_surface }}>sieht gut aus <span style={{ background: `${c.primary}33`, color: c.primary, borderRadius: 3, padding: "0 3px" }}>@A11myt</span></span>
-            <span className="dc-input" style={{ background: c.surface_container_high, color: c.outline }}>Nachricht an #themes</span>
+            <span style={{ color: c.on_surface }}>{t("sieht gut aus")}{" "}<span style={{ background: `${c.primary}33`, color: c.primary, borderRadius: 3, padding: "0 3px" }}>@A11myt</span></span>
+            <span className="dc-input" style={{ background: c.surface_container_high, color: c.outline }}>{t("Nachricht an #themes")}</span>
           </div>
         </div>
       </Frame>

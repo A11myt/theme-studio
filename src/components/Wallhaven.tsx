@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useDialog } from "../lib/useDialog";
 import { errText } from "../lib/platform";
 import { download, nearestWallhavenColor, search, WALLHAVEN_COLORS, type WallhavenItem } from "../lib/wallhaven";
+import { t } from "../lib/i18n";
 
 interface Props {
   wallpaperDir?: string;   // App: Bilder landen hier
@@ -67,26 +68,26 @@ export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClos
   };
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="wallhaven durchsuchen" onClick={onClose}>
+    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("wallhaven durchsuchen")} onClick={onClose}>
       <div ref={sheetRef} tabIndex={-1} className="sheet" onClick={(e) => e.stopPropagation()}>
         <form className="wh-head" onSubmit={submit}>
-          <h2>wallhaven</h2>
+          <h2>{t("wallhaven")}</h2>
           <input ref={input} className="name grow" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen, z. B. mountains, cyberpunk, wow … (leer = Toplist)" aria-label="Suchbegriff" />
-          <button type="submit" className="primary">Suchen</button>
-          <button type="button" className="ghost" onClick={onClose} aria-label="Schließen">✕</button>
+            placeholder={t("Suchen, z. B. mountains, cyberpunk, wow … (leer = Toplist)")} aria-label={t("Suchbegriff")} />
+          <button type="submit" className="primary">{t("Suchen")}</button>
+          <button type="button" className="ghost" onClick={onClose} aria-label={t("Schließen")}>✕</button>
         </form>
         <div className="wh-colors">
-          <span className="empty">Farbe:</span>
-          <button type="button" className={`chip ${!color ? "on" : ""}`} onClick={() => { setColor(undefined); void load(query, 1, undefined); }}>alle</button>
+          <span className="empty">{t("Farbe:")}</span>
+          <button type="button" className={`chip ${!color ? "on" : ""}`} onClick={() => { setColor(undefined); void load(query, 1, undefined); }}>{t("alle")}</button>
           {themeChips.map((c, i) => (
             <button key={c} type="button" className={`chip col ${color === c ? "on" : ""}`} style={{ background: `#${c}` }}
-              title={`passend zum Theme (#${c})`} onClick={() => { setColor(c); void load(query, 1, c); }}>{i === 0 ? "Theme" : `Bild ${i}`}</button>
+              title={t("passend zum Theme (#{c})", { c })} onClick={() => { setColor(c); void load(query, 1, c); }}>{i === 0 ? "Theme" : t("Bild {i}", { i })}</button>
           ))}
-          <button type="button" className="chip" onClick={() => setShowAll((v) => !v)}>{showAll ? "weniger" : "mehr Farben …"}</button>
+          <button type="button" className="chip" onClick={() => setShowAll((v) => !v)}>{showAll ? t("weniger") : t("mehr Farben …")}</button>
           {showAll && WALLHAVEN_COLORS.map((c) => (
             <button key={c} type="button" className={`dot-btn ${color === c ? "on" : ""}`} style={{ background: `#${c}` }}
-              aria-label={`Farbe #${c}`} onClick={() => { setColor(c); void load(query, 1, c); }} />
+              aria-label={t("Farbe #{c}", { c })} onClick={() => { setColor(c); void load(query, 1, c); }} />
           ))}
         </div>
         {error && <p className="error">{error}</p>}
@@ -94,21 +95,21 @@ export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClos
           {items.map((it) => (
             <li key={it.id}>
               <button type="button" className="wh-item" onClick={() => pick(it)} disabled={!!busyId}
-                aria-label={`Wallpaper ${it.id} übernehmen (${it.res})`}>
+                aria-label={t("Wallpaper {id} übernehmen ({res})", { id: it.id, res: it.res })}>
                 <img src={it.thumb} alt="" loading="lazy" />
                 <span className="wh-meta">
                   <span className="dots">{it.colors.slice(0, 4).map((c) => <i key={c} style={{ background: c }} />)}</span>
-                  <small>{busyId === it.id ? "lädt …" : it.res}</small>
+                  <small>{busyId === it.id ? t("lädt …") : it.res}</small>
                 </span>
               </button>
             </li>
           ))}
         </ul>
         <div className="wh-foot">
-          {loading ? <span className="empty">lädt …</span>
-            : page < lastPage && <button type="button" className="ghost" onClick={() => load(query, page + 1)}>Mehr laden</button>}
-          {!loading && !items.length && !error && <span className="empty">Nichts gefunden.</span>}
-          <small className="empty">Nur jugendfreie Bilder, mind. 1920×1080 · Bilder von wallhaven.cc</small>
+          {loading ? <span className="empty">{t("lädt …")}</span>
+            : page < lastPage && <button type="button" className="ghost" onClick={() => load(query, page + 1)}>{t("Mehr laden")}</button>}
+          {!loading && !items.length && !error && <span className="empty">{t("Nichts gefunden.")}</span>}
+          <small className="empty">{t("Nur jugendfreie Bilder, mind. 1920×1080 · Bilder von wallhaven.cc")}</small>
         </div>
       </div>
     </div>
