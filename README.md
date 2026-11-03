@@ -1,106 +1,80 @@
 # Theme Studio
 
-Themes aus eigenen Bildern bauen, alle Material-You-Varianten nebeneinander vergleichen und für
-**Linux (matugen)** und **Windows (wintheme)** übernehmen. Läuft lokal im Browser, alles bleibt auf dem Rechner.
+**English** · [Deutsch](README.de.md)
 
-**Ohne Installation:** im Browser unter **https://a11myt.github.io/theme-studio/** (Anwenden, Nerd Fonts und
-wallhaven nur in der App) · Windows: `…-portable.exe` aus den [Releases](https://github.com/A11myt/theme-studio/releases)
-· Linux: AppImage. **Installiert:** Windows-Setup aus den Releases – aktualisiert sich dann selbst.
+![Theme Studio – color view](docs/screenshots/color.webp)
+
+Build desktop themes from your own wallpapers. Compare all nine Material You variants side by side on mini
+desktops, tweak them, and apply the result to **Linux** ([matugen](https://github.com/InioX/matugen)-based
+setups) and **Windows** (Windows accent, Windows Terminal, VS Code, oh-my-posh, komorebi) – with one click.
+
+The source colors are **exactly** what matugen picks, because Theme Studio runs matugen's own Rust color code
+(`material-colors` 0.4.2) as WebAssembly. Everything stays on your machine.
+
+| Preview with apps | Prompt wizard | Collection |
+|---|---|---|
+| ![Preview](docs/screenshots/preview.webp) | ![Prompt wizard](docs/screenshots/prompt.webp) | ![Collection](docs/screenshots/collection.webp) |
+
+## Get it
+
+- **In the browser** (no install): https://a11myt.github.io/theme-studio/ – applying themes, Nerd Font installs
+  and wallhaven search need the desktop app
+- **Windows**: installer (updates itself) or `…-portable.exe` (just run it) from
+  [Releases](https://github.com/A11myt/theme-studio/releases)
+- **Linux**: AppImage or `.deb` from Releases, or build it yourself (see below)
+
+> The UI is currently in German. English UI is planned.
+
+## Features
+
+- **Images**: drag & drop your wallpapers or search **wallhaven** (SFW only, ≥ 1920×1080) – also by color,
+  to find wallpapers that match your theme
+- **Source colors** identical to matugen, or pick your own; **9 variants** (tonal-spot, vibrant, expressive …)
+  as live mini desktops for Linux (bubble bar) and Windows (komorebi bar + terminal)
+- **Fine-tuning**: shift hue and chroma of the source color, or override single roles (click a palette swatch) –
+  overrides are passed to matugen via `matugen json`, so your own templates stay in charge
+- **Readability**: WCAG contrast of the key color pairs as a traffic light
+- **Fonts** like [fontgen](https://github.com/A11myt/dotFiles): UI, mono and accent font with sizes;
+  **Nerd Fonts** straight from GitHub (only 8 files per font: Mono + Propo × 4 styles)
+- **Terminal & prompt wizard** (like `p10k configure`): lean / classic / rainbow / pure, lines, frame,
+  separators, icons, prompt char, right side, transient prompt – outputs a powerlevel10k add-on (uses terminal
+  color numbers, so it follows matugen) and an oh-my-posh template (recolored by wintheme)
+- **Previews** of VS Code, Firefox, Obsidian and Discord; 16 ANSI colors harmonized to your theme
+- **Apply** (desktop app): Linux via `wallthemes` + `fontgen`, Windows via `wintheme`
+- **Exports**: theme file (re-importable), VS Code extension (`.vsix`), Windows Terminal scheme + font,
+  komorebi theme, base16 YAML, pywal `colors.json`, Xresources, CSS variables, fontgen profile, and your own
+  matugen/fontgen templates (`{{colors.<role>.<variant>.<format>}}`, `{{fonts.*}}`, `{{mode}}`)
+- **Collection** with favorites, search and sorting; **share themes as links**; undo/redo; random theme
+- **Accessible**: full keyboard support, focus handling in dialogs, labelled controls, WCAG contrasts,
+  single-key shortcuts can be turned off
+
+## Develop
 
 ```bash
 pnpm install
-pnpm dev          # im Browser → http://localhost:5173
-pnpm app          # als Desktop-App (Tauri, Entwicklungsmodus)
-pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
+pnpm dev          # browser → http://localhost:5173 (also proxies wallhaven)
+pnpm test         # vitest – colors checked against matugen 4.2 reference values
+pnpm app          # desktop app (Tauri 2, dev mode)
+pnpm app:build    # → src-tauri/target/release/theme-studio
 ```
 
-## Was es kann
+Linux needs Rust (`rustup`) and `webkit2gtk-4.1 libappindicator-gtk3 librsvg` for the desktop app.
+The WebAssembly color module is prebuilt in `src/wasm/`; rebuild it with `pnpm build:wasm`
+(needs `wasm32-unknown-unknown` and `wasm-bindgen-cli 0.2.130`).
 
-- **Bilder** hochladen (Drag & Drop) oder **auf wallhaven suchen** (nur jugendfrei, ≥ 1920×1080, wie der Launcher)
-- **Ausgangsfarben**: die 4 Farben des Bildes – **exakt wie matugen**, weil matugens eigener Rust-Code
-  (material-colors 0.4.2) als WebAssembly im Browser läuft; geprüft mit 13 Wallpapern – oder eine eigene Farbe
-- **9 Varianten** (tonal-spot, vibrant, expressive …) als Mini-Desktops: Linux-Leiste mit Bubbles oder
-  Windows mit komorebi-Leiste und Terminal, jeweils auf dem Wallpaper
-- **Hell/Dunkel, Kontrast**, komplette Palette (Klick kopiert die Farbe), auf Wunsch hell + dunkel nebeneinander
-- **Lesbarkeit**: WCAG-Kontrast der wichtigsten Paare als Ampel, Punkt an jeder Palettenfarbe
-- **Terminal**: 16 ANSI-Farben passend zum Theme (klassische Farbtöne, zur Ausgangsfarbe harmonisiert) mit Vorschau
-- **Zufall**, **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), **Import** exportierter `.theme.json` (auch per Drag & Drop)
-- **Vier Bereiche** statt einer langen Seite: Farbe → Schrift → Vorschau → Export (Alt+1–4), mit „Weiter“-Knöpfen;
-  der Schrift-Bereich zeigt daneben live Desktop und Terminal, der Export-Bereich oben eine Zusammenfassung
-- **Tastenkürzel**: 1–9 Variante (im Bereich Farbe), D/H dunkel/hell, Z Zufall, Strg+S speichern
-- **Schrift** wie fontgen: Oberfläche, Mono, Akzent + Größen; deine Profile iosevka/hack/jetbrains als Vorlage,
-  Auswahl aus den installierten Schriften, Vorschau in den Mini-Desktops. Gespeichert wird nur der Name.
-- **Nerd Fonts von GitHub** (App): Liste des neuesten Releases, Installieren auf Klick – nur Mono + Propo in
-  Regular/Bold/Italic/BoldItalic (8 Dateien) in den Benutzer-Schriftordner, nichts im Projekt
-- **VS Code**: installierbare Erweiterung (`.vsix`, Oberfläche wie deine matugen-Vorlage + Syntaxfarben),
-  `settings.json`-Auszug (Theme + Schrift), Theme-Datei
-- **Einstellungen** (App, ⚙): Wallpaper-Ordner (wallhaven-Bilder landen dort), Export-Ordner, „jedes Mal fragen“
-- **Sammlung**: alle Themes als Karten mit Vorschau – Favoriten ★, Suche, Sortierung (neu/Name/Farbe),
-  Umbenennen (Doppelklick), Duplizieren, Löschen
-- **Terminal & Prompt-Assistent** (wie `p10k configure`): Stil lean/classic/rainbow/pure, Zeilen, Rahmen, Trenner,
-  Symbole, Prompt-Zeichen, rechte Seite, Uhrzeit, Zusammenfalten – jede Antwort mit Live-Vorschau; Schalter
-  „eigenen Prompt verwenden“. Ausgabe: Ergänzung zu `~/.p10k.zsh` (Terminalfarben-Nummern → folgt matugen) und
-  oh-my-posh-Vorlage für wintheme; „Anwenden“ setzt bzw. entfernt beides
-- **Programm-Vorschauen**: VS Code (Syntax wie die Erweiterung), Firefox, Obsidian, Discord
-- **Speichern**: Themes (Farben + Schrift) bleiben lokal (IndexedDB)
-- **Anwenden per Knopf** (App): setzt das Theme auf diesem Rechner – Linux über `wallthemes` (Wallpaper,
-  alle matugen-Vorlagen, Hooks) und `fontgen`, Windows über `wintheme` (inkl. Terminal-Schrift)
-- **Feinjustieren**: Farbton und Buntheit der Ausgangsfarbe verschieben (bleibt überall exakt – es ist wieder eine
-  Farbe) und einzelne Rollen überschreiben (Vorschau → Palette anklicken); Überschreibungen gehen als `--override`
-  an wallthemes (über `matugen json`, also deine Vorlagen) und wintheme
-- **Passende Wallpaper**: wallhaven nach der Ausgangsfarbe bzw. den Bildfarben durchsuchen (29 wallhaven-Farben)
-- **Anwenden**: fertige Befehle
-  - Windows: `wintheme --color #db79a9 --scheme vibrant --mode dark --font "Iosevka Nerd Font Mono"` (aktuelles Wallpaper)
-  - Linux: `wallthemes --color '#db79a9' --scheme vibrant --mode dark` (aktuelles Wallpaper, matugen-Vorlagen + Hooks)
-- **Dateien** (nach Windows/Linux/Allgemein filterbar): Theme-Datei, Windows-Terminal-Schema + -Schrift, komorebi-Theme,
-  fontgen-Profil, base16-YAML (Stylix, tinted-theming), pywal `colors.json`, Xresources, CSS-Variablen
-- **Vorlagen**: eigene matugen- und fontgen-Vorlagen hochladen (z. B. `alacritty.toml`) → mit dem Theme ausgefüllt
-  (`{{colors.<rolle>.<default|dark|light>.<hex|hex_stripped|rgb|rgba>}}`, `{{fonts.ui|mono|accent|ui_size|mono_size|ui_px|mono_px}}`, `{{mode}}`, `{{image}}`)
+Structure: `src/useStudio.ts` (state + actions), `src/panes/` (one file per view), `src/components/`,
+`src/lib/` (color math, exporters, prompt, share links …), `color-wasm/` (matugen's color code), `src-tauri/`.
 
-Gleiche Ausgangsfarbe + Variante + Modus ⇒ **identische Palette** in Studio, matugen und wintheme
-(material-color-utilities, Spezifikation 2021).
+### Releases
 
-## Technik
+`git tag v0.2.0 && git push --tags` builds Windows (installer + portable exe) and Linux (AppImage, .deb),
+signs the updates and publishes a release with `latest.json`, which the installed app checks on start.
 
-Vite + React + TypeScript, `@material/material-color-utilities` (Paletten), `idb-keyval`.
-Der Entwicklungsserver leitet wallhaven weiter (CORS); als statische Seite (`pnpm build`) fehlt nur wallhaven.
+## Related
 
-**Ausgangsfarben (`color-wasm/`)**: kleines Rust-Modul, das Schritt für Schritt macht, was matugen 4.2 macht
-(112×112 Dreiecksfilter, Celebi-Quantisierung, Buntheit ≥ 5, Score), mit material-colors **0.4.2** wie matugen.
-In `vendor/` liegt diese Bibliothek mit einer einzigen Änderung: die Debug-Zeitmessung ist unter WebAssembly
-ausgeklammert (keine Systemuhr dort). Das fertige Modul liegt in `src/wasm/` im Repo – Rust braucht man nur
-zum Neubauen:
+- [dotfiles](https://github.com/A11myt/dotFiles) – Hyprland + Quickshell setup with `wallthemes` and `fontgen`
+- [dotfiles-windows](https://github.com/A11myt/dotfiles-windows) – `wintheme`, komorebi, whkd, Windows Terminal
 
-```bash
-rustup target add wasm32-unknown-unknown
-cargo install wasm-bindgen-cli --version 0.2.130 --locked
-pnpm build:wasm
-cd color-wasm && cargo run --release -- bild.jpg   # Gegenprobe zu: matugen image bild.jpg --show-source-colors
-```
+## License
 
-## Desktop-App (Tauri 2)
-
-Dieselbe Oberfläche als eigenes Fenster, plus: Einstellungen (Speicherorte), Nerd Fonts, Liste der installierten
-Schriften. wallhaven-Bilder lädt die App in Rust direkt in den Wallpaper-Ordner; Exporte schreibt sie selbst
-(jeder Ordner möglich, auch `D:\` unter Windows). Rechte der Oberfläche (`src-tauri/capabilities/default.json`):
-wallhaven-Suche, Dialoge, Zwischenablage – mehr nicht.
-
-Voraussetzungen unter Arch: Rust (`rustup`) und
-`sudo pacman -S --needed webkit2gtk-4.1 libappindicator-gtk3 librsvg`.
-Pakete (.deb/.rpm/AppImage): `pnpm tauri build`.
-
-**Windows-Installer** baut GitHub Actions (`.github/workflows/build.yml`) bei jedem Push:
-Actions → letzter Lauf → Artefakt `theme-studio-windows` (`.exe` bzw. `.msi`). Ein Tag `v*` legt zusätzlich
-einen Release-Entwurf mit allen Installern an.
-
-## Releases & Updates
-
-`git tag v0.2.0 && git push --tags` → `.github/workflows/release.yml` baut Windows (Setup + portable .exe) und Linux
-(AppImage, .deb), signiert die Updates und veröffentlicht das Release samt `latest.json`. Die installierte
-Windows-App prüft beim Start dort und bietet „Jetzt aktualisieren“ an.
-Signatur: privater Schlüssel `~/.tauri/theme-studio.key` (nie ins Repo, **sichern!** – ohne ihn keine Updates mehr),
-als Repository-Geheimnis `TAURI_SIGNING_PRIVATE_KEY`; der öffentliche steht in `src-tauri/tauri.conf.json`.
-
-## Lizenz
-
-MIT – siehe `LICENSE`. `color-wasm/vendor/material-colors` steht unter MIT oder Apache-2.0 (Lizenzdateien dort).
+MIT – see `LICENSE`. `color-wasm/vendor/material-colors` is MIT or Apache-2.0.
