@@ -51,6 +51,21 @@ jobs:
       - name: App bauen
         run: pnpm tauri build --bundles ${{ matrix.bundles }}
 
+      # Windows ohne Installation: das Programm selbst – Oberfläche ist eingebaut, WebView2 bringt Windows 11 mit
+      - name: Portable .exe
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p portable
+          cp src-tauri/target/release/theme-studio.exe "portable/Theme-Studio-portable.exe"
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: theme-studio-windows-portable
+          path: portable/Theme-Studio-portable.exe
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v4
         with:
           name: theme-studio-${{ matrix.artifact }}
