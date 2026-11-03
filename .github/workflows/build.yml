@@ -12,7 +12,25 @@ permissions:
   contents: write
 
 jobs:
+  # Typprüfung + Tests (Farben/Ausgangsfarben exakt wie matugen, Exporte, Prompt mit zsh) – vor jedem Build
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y zsh
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
   app:
+    needs: check
     strategy:
       fail-fast: false
       matrix:

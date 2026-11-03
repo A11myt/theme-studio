@@ -2,7 +2,7 @@
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 /** wallhaven geht in der App und lokal (pnpm dev/preview leiten weiter) – nicht auf der Webseite (CORS). */
-export const hasWallhaven = isTauri || ["localhost", "127.0.0.1"].includes(location.hostname);
+export const hasWallhaven = isTauri || (typeof location !== "undefined" && ["localhost", "127.0.0.1"].includes(location.hostname));
 
 /** fetch: in der App direkt (keine CORS-Grenze), im Browser über die Weiterleitung des Entwicklungsservers. */
 export async function netFetch(url: string): Promise<Response> {
@@ -119,7 +119,7 @@ export async function imageToDisk(blob: Blob, name: string, dir: string): Promis
 
 /** Automatische Updates (Windows-Installer bzw. AppImage): neue Version auf GitHub? */
 // Windows-Installer aktualisiert sich selbst; unter Linux baust du lokal (bzw. AppImage manuell)
-export const canUpdate = isTauri && navigator.userAgent.includes("Windows");
+export const canUpdate = isTauri && typeof navigator !== "undefined" && navigator.userAgent.includes("Windows");
 
 export async function checkUpdate(): Promise<{ version: string; notes?: string; install: (progress: (p: number) => void) => Promise<void> } | null> {
   const { check } = await import("@tauri-apps/plugin-updater");

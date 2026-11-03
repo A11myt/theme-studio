@@ -367,3 +367,6 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .wiz-term { border-radius: 8px; padding: 10px 12px; font-size: .85rem; overflow: hidden; }
 .wiz-multi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
 @media (max-width: 800px) { .wiz-choice { grid-template-columns: 1fr; } .wiz-multi { grid-template-columns: 1fr 1fr; } }
+/* sechs Bereiche: Kopfzeile etwas kompakter */
+.tabs-nav button { padding: 5px 11px; }
+.top .name { width: 180px; }
