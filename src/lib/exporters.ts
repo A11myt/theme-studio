@@ -1,6 +1,7 @@
 // Ausgaben für Linux (matugen/Alacritty) und Windows (wintheme, Windows Terminal, komorebi).
 // Zuordnungen wie in dotfiles (matugen-Vorlagen) und dotfiles-windows (wintheme.py).
 import { palette, type Palette, type ThemeSettings } from "./color";
+import { saveText } from "./platform";
 
 export interface ExportFile {
   id: string;
@@ -104,10 +105,6 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string): 
   ];
 }
 
-export function download(filename: string, text: string) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+export async function download(filename: string, text: string): Promise<boolean> {
+  return saveText(filename, text);
 }

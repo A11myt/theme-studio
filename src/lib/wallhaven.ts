@@ -1,5 +1,6 @@
 // wallhaven.cc ohne Anmeldung – gleiche Filter wie der Launcher auf dem Laptop (scripts/wallhaven.py):
 // nur jugendfrei, mind. 1920×1080, 16:9/16:10, Allgemein/Anime/Personen; leer = Toplist des letzten Monats.
+import { netFetch } from "./platform";
 export interface WallhavenItem {
   id: string;
   thumb: string;   // Vorschau (direkt von th.wallhaven.cc ladbar)
@@ -26,7 +27,7 @@ export async function search(query: string, page = 1): Promise<WallhavenPage> {
     params.set("sorting", "toplist");
     params.set("topRange", "1M");
   }
-  const r = await fetch(`/wallhaven/api/search?${params}`);
+  const r = await netFetch(`https://wallhaven.cc/api/v1/search?${params}`);
   if (!r.ok) throw new Error(r.status === 429 ? "zu viele Anfragen – kurz warten" : `wallhaven antwortet mit ${r.status}`);
   const d = await r.json();
   return {
@@ -38,11 +39,11 @@ export async function search(query: string, page = 1): Promise<WallhavenPage> {
   };
 }
 
-/** Originalbild als Datei laden (über den lokalen Server, wegen CORS). */
+/** Originalbild als Datei laden. */
 export async function download(item: WallhavenItem): Promise<File> {
   const u = new URL(item.full);
   if (u.hostname !== "w.wallhaven.cc" || !u.pathname.startsWith("/full/")) throw new Error("unerwartete Bildadresse");
-  const r = await fetch(`/wallhaven${u.pathname}`);
+  const r = await netFetch(`https://w.wallhaven.cc${u.pathname}`);
   if (!r.ok) throw new Error(`Download fehlgeschlagen (${r.status})`);
   const blob = await r.blob();
   if (!blob.type.startsWith("image/")) throw new Error("kein Bild erhalten");

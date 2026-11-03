@@ -9,15 +9,24 @@
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
-    "build:wasm": "cd color-wasm && cargo build --release --lib --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir ../src/wasm target/wasm32-unknown-unknown/release/studio_color.wasm"
+    "build:wasm": "cd color-wasm && cargo build --release --lib --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir ../src/wasm target/wasm32-unknown-unknown/release/studio_color.wasm",
+    "tauri": "tauri",
+    "app": "tauri dev",
+    "app:build": "tauri build"
   },
   "dependencies": {
     "@material/material-color-utilities": "0.4.0",
+    "@tauri-apps/api": "2.12.4",
+    "@tauri-apps/plugin-clipboard-manager": "2.5.0",
+    "@tauri-apps/plugin-dialog": "2.8.4",
+    "@tauri-apps/plugin-fs": "2.7.1",
+    "@tauri-apps/plugin-http": "2.8.3",
     "idb-keyval": "6.2.2",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.12.4",
     "@types/node": "^24.19.2",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",

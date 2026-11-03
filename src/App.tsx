@@ -4,6 +4,7 @@ import { Library } from "./components/Library";
 import { Wallhaven } from "./components/Wallhaven";
 import { hueName, onColor, palette, SCHEMES, sourceColors, type Mode, type SchemeName, type ThemeSettings } from "./lib/color";
 import { commands, download, exportsFor, renderTemplate } from "./lib/exporters";
+import { copyText } from "./lib/platform";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
 
 const DEFAULT: ThemeSettings = { source: "#6750a4", scheme: "tonal-spot", mode: "dark", contrast: 0 };
@@ -122,8 +123,12 @@ export function App() {
   };
 
   const copy = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    flash("Kopiert");
+    try {
+      await copyText(text);
+      flash("Kopiert");
+    } catch {
+      flash("Kopieren nicht möglich");
+    }
   };
 
   const cmds = commands(settings);
@@ -250,7 +255,7 @@ export function App() {
               <li key={f.id}>
                 <span><b>{f.label}</b><small>{f.hint}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(f.text)}>Kopieren</button>
-                <button type="button" className="ghost" onClick={() => download(f.filename, f.text)}>Herunterladen</button>
+                <button type="button" className="ghost" onClick={() => void download(f.filename, f.text).then((ok) => ok && flash("Gespeichert"))}>Herunterladen</button>
               </li>
             ))}
             {templates.map((t) => {
@@ -259,7 +264,7 @@ export function App() {
                 <li key={t.id}>
                   <span><b>{t.name}</b><small>aus deiner matugen-Vorlage</small></span>
                   <button type="button" className="ghost" onClick={() => copy(out())}>Kopieren</button>
-                  <button type="button" className="ghost" onClick={() => download(t.output, out())}>Herunterladen</button>
+                  <button type="button" className="ghost" onClick={() => void download(t.output, out()).then((ok) => ok && flash("Gespeichert"))}>Herunterladen</button>
                 </li>
               );
             })}

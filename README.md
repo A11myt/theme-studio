@@ -5,7 +5,9 @@ Themes aus eigenen Bildern bauen, alle Material-You-Varianten nebeneinander verg
 
 ```bash
 pnpm install
-pnpm dev          # → http://localhost:5173
+pnpm dev          # im Browser → http://localhost:5173
+pnpm app          # als Desktop-App (Tauri, Entwicklungsmodus)
+pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 ```
 
 ## Was es kann
@@ -45,8 +47,13 @@ pnpm build:wasm
 cd color-wasm && cargo run --release -- bild.jpg   # Gegenprobe zu: matugen image bild.jpg --show-source-colors
 ```
 
-## Später: Tauri
+## Desktop-App (Tauri 2)
 
-Der Server-Teil (wallhaven, matugen) wird dann zu Tauri-Befehlen; Port 5173 ist fest eingestellt,
-damit `tauri dev` ihn direkt nutzen kann. Unter Arch zusätzlich:
+Dieselbe Oberfläche als eigenes Fenster. Unterschiede zur Browser-Version: wallhaven läuft direkt
+über Tauri (kein Entwicklungsserver nötig), „Herunterladen“ öffnet einen Speichern-Dialog.
+Rechte der App (`src-tauri/capabilities/default.json`): nur wallhaven, Speichern-Dialog,
+Textdateien im Benutzerordner schreiben, Zwischenablage.
+
+Voraussetzungen unter Arch: Rust (`rustup`) und
 `sudo pacman -S --needed webkit2gtk-4.1 libappindicator-gtk3 librsvg`.
+Pakete (.deb/.rpm/AppImage): `pnpm tauri build`.
