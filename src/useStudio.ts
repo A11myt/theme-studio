@@ -48,6 +48,9 @@ export function useStudio() {
   });
   const setPrompt = (o: PromptOptions) => { setPromptState(o); try { localStorage.setItem("theme-studio-prompt", JSON.stringify(o)); } catch { /* egal */ } };
   const [showWizard, setShowWizard] = useState(false);
+  // Einzeltasten-Kürzel (1–9, D, H, Z) – abschaltbar, z. B. für Spracheingabe/Screenreader (WCAG 2.1.4)
+  const [singleKeys, setSingleKeysState] = useState(() => { try { return localStorage.getItem("theme-studio-single-keys") !== "0"; } catch { return true; } });
+  const setSingleKeys = (on: boolean) => { setSingleKeysState(on); try { localStorage.setItem("theme-studio-single-keys", on ? "1" : "0"); } catch { /* egal */ } };
   const [tab, setTabState] = useState<Tab>(() => {
     try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }
     return "farbe";
@@ -309,7 +312,7 @@ export function useStudio() {
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
     if (e.altKey && /^[1-6]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
-    if (mod || e.altKey) return;
+    if (mod || e.altKey || !singleKeys) return;
     const schemes = Object.keys(SCHEMES) as SchemeName[];
     if (/^[1-9]$/.test(e.key) && tab === "farbe") update({ scheme: schemes[Number(e.key) - 1] });
     else if (e.key === "d") update({ mode: "dark" });
@@ -401,6 +404,8 @@ export function useStudio() {
     deleteTemplate,
     copy,
     shareTheme,
+    singleKeys,
+    setSingleKeys,
     saveOpts,
     report,
     saveFile,

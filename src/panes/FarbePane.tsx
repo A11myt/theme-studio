@@ -7,7 +7,7 @@ import type { Studio } from "../useStudio";
 export function FarbePane({ s }: { s: Studio }) {
   const { settings, os, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg } = s;
   return (
-    <div className="pane" role="tabpanel">
+    <div className="pane">
         <section className="card setup" id="farbe">
           <div className="hero">
             {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">Kein Bild – nur Farbe</div>}

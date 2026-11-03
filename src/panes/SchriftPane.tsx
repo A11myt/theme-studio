@@ -6,7 +6,7 @@ import type { Studio } from "../useStudio";
 export function SchriftPane({ s }: { s: Studio }) {
   const { settings, os, fonts, setFonts, setShowNerd, fontsKey, prompt, setTab, pal, bg } = s;
   return (
-    <div className="pane schrift-pane" role="tabpanel">
+    <div className="pane schrift-pane">
           <FontPanel fonts={fonts} onChange={setFonts} onNerdFonts={() => setShowNerd(true)} refreshKey={fontsKey} />
           <aside className="card mini-preview">
             <h3>So sieht es aus</h3>

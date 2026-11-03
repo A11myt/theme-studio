@@ -63,7 +63,7 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
           const f = t.fonts ?? DEFAULT_FONTS;
           return (
             <li key={t.id} className="theme-card">
-              <button type="button" className="tc-preview" onClick={() => onOpen(t)} title="Öffnen">
+              <button type="button" className="tc-preview" onClick={() => onOpen(t)} title="Öffnen" aria-label={`Theme ${t.name} öffnen`}>
                 <Desktop c={c} os={os} image={t.imageId ? urls[t.imageId] : undefined} fonts={f} />
               </button>
               <div className="tc-body">

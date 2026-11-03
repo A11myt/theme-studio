@@ -7,7 +7,7 @@ import type { Studio } from "../useStudio";
 export function ExportPane({ s }: { s: Studio }) {
   const { templates, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, shareTheme } = s;
   return (
-    <div className="pane" role="tabpanel">
+    <div className="pane">
         <section className="card summary">
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
           <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"} · {effSource}{overrideCount ? ` · ${overrideCount} überschrieben` : ""} · {fonts.mono}</small></span>

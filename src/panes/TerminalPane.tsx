@@ -5,7 +5,7 @@ import type { Studio } from "../useStudio";
 export function TerminalPane({ s }: { s: Studio }) {
   const { settings, fonts, prompt, setPrompt, setShowWizard, setTab, pal, copy, saveFile } = s;
   return (
-    <div className="pane" role="tabpanel">
+    <div className="pane">
           <section className="card terminal-pane">
             <div className="detail-head">
               <h2>Prompt</h2>

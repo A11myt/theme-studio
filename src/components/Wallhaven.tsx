@@ -1,5 +1,6 @@
 // wallhaven-Suche als Overlay: suchen, durchblättern, Bild anklicken → wird hochgeladen und ausgewählt.
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useDialog } from "../lib/useDialog";
 import { errText } from "../lib/platform";
 import { download, nearestWallhavenColor, search, WALLHAVEN_COLORS, type WallhavenItem } from "../lib/wallhaven";
 
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClose, onPick }: Props) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialog(sheetRef);
   const [query, setQuery] = useState("");
   const [color, setColor] = useState<string | undefined>(initialColor);
   const [showAll, setShowAll] = useState(false);
@@ -65,7 +68,7 @@ export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClos
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="wallhaven durchsuchen" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} tabIndex={-1} className="sheet" onClick={(e) => e.stopPropagation()}>
         <form className="wh-head" onSubmit={submit}>
           <h2>wallhaven</h2>
           <input ref={input} className="name grow" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -90,7 +93,8 @@ export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClos
         <ul className="wh-grid">
           {items.map((it) => (
             <li key={it.id}>
-              <button type="button" className="wh-item" onClick={() => pick(it)} disabled={!!busyId}>
+              <button type="button" className="wh-item" onClick={() => pick(it)} disabled={!!busyId}
+                aria-label={`Wallpaper ${it.id} übernehmen (${it.res})`}>
                 <img src={it.thumb} alt="" loading="lazy" />
                 <span className="wh-meta">
                   <span className="dots">{it.colors.slice(0, 4).map((c) => <i key={c} style={{ background: c }} />)}</span>

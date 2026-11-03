@@ -1,5 +1,6 @@
 // Prompt-Assistent wie `p10k configure`: eine Frage pro Schritt, jede Antwort mit Live-Vorschau im Theme.
 import { useEffect, useRef, useState } from "react";
+import { useDialog } from "../lib/useDialog";
 import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
 import { CHARS, RIGHT_LABELS, type PromptOptions, type RightItem } from "../lib/prompt";
@@ -56,6 +57,8 @@ const STEPS: Step[] = [
 ];
 
 export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialog(sheetRef);
   const [o, setO] = useState<PromptOptions>({ ...value, enabled: true });
   const [i, setI] = useState(0);
   const closeRef = useRef(onClose);
@@ -87,7 +90,7 @@ export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="Prompt-Assistent" onClick={onClose}>
-      <div className="sheet wizard" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} tabIndex={-1} className="sheet wizard" onClick={(e) => e.stopPropagation()}>
         <div className="wh-head">
           <h2>Prompt-Assistent <small>{done ? "Fertig" : `Schritt ${i + 1} von ${visible.length}`}</small></h2>
           <span className="grow" />

@@ -1,5 +1,6 @@
 // Theme auf diesem Rechner anwenden: zeigt vorher, was passiert, danach das Protokoll der Programme.
 import { useEffect, useRef, useState } from "react";
+import { useDialog } from "../lib/useDialog";
 import { effectiveSource, SCHEMES, type ThemeSettings } from "../lib/color";
 import { FONT_PRESETS, type Fonts } from "../lib/fonts";
 import { ompTemplate, p10kOverlay, type PromptOptions } from "../lib/prompt";
@@ -18,6 +19,8 @@ interface Props {
 const isWindows = navigator.userAgent.includes("Windows");
 
 export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onClose }: Props) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialog(sheetRef);
   const [state, setState] = useState<"ready" | "running" | "done" | "error">("ready");
   const [log, setLog] = useState("");
   const [withFonts, setWithFonts] = useState(true);
@@ -53,7 +56,7 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="Theme anwenden" onClick={() => state !== "running" && onClose()}>
-      <div className="sheet settings" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} tabIndex={-1} className="sheet settings" onClick={(e) => e.stopPropagation()}>
         <div className="wh-head">
           <h2>Auf diesem Rechner anwenden</h2>
           <span className="grow" />

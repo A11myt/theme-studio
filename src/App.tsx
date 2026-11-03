@@ -18,20 +18,31 @@ import { useStudio } from "./useStudio";
 
 export function App() {
   const s = useStudio();
-  const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS } = s;
+  const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys } = s;
 
   return (
     <div className="app" style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
+      <a className="skip" href="#bereich">Zum Inhalt springen</a>
       <header className="top">
         <h1>Theme Studio</h1>
         <div className="seg" role="group" aria-label="Vorschau für">
           <button type="button" aria-pressed={os === "linux"} onClick={() => setOs("linux")}>Linux</button>
           <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
         </div>
-        <nav className="tabs-nav" role="tablist" aria-label="Bereiche">
+        <nav className="tabs-nav" role="tablist" aria-label="Bereiche"
+          onKeyDown={(e) => {
+            // Pfeiltasten/Pos1/Ende wechseln den Bereich (WAI-ARIA Tabs)
+            const i = TABS.findIndex(([id]) => id === tab);
+            const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
+            if (n === undefined) return;
+            e.preventDefault();
+            const id = TABS[(n + TABS.length) % TABS.length][0];
+            setTab(id);
+            requestAnimationFrame(() => document.getElementById(`tab-${id}`)?.focus());
+          }}>
           {TABS.map(([id, label], i) => (
-            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-              title={`${label} (Alt+${i + 1})`}>{label}</button>
+            <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
+              tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${label} (Alt+${i + 1})`}>{label}</button>
           ))}
         </nav>
         <span className="grow" />
@@ -54,7 +65,7 @@ export function App() {
         onDeleteImage={deleteImage} onOpenTheme={openTheme} onDeleteTheme={deleteTheme}
         onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />
 
-      <main className="main">
+      <main className="main" id="bereich" tabIndex={-1} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <UpdateBanner />
         {tab === "sammlung" && <SammlungPane s={s} />}
         {tab === "farbe" && <FarbePane s={s} />}
@@ -71,7 +82,7 @@ export function App() {
       {showApply && <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />}
       {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
         onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(`${fam} Nerd Font installiert`, 3000); }} />}
-      {showSettings && <SettingsDialog value={app} onClose={() => setShowSettings(false)}
+      {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys} onClose={() => setShowSettings(false)}
         onSave={(s) => { setApp(s); storeSettings(s); flash("Einstellungen gespeichert"); }} />}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite">{toast}</div>
     </div>

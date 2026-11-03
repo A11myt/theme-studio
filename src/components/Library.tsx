@@ -54,7 +54,8 @@ export function Library(p: Props) {
         <ul className="thumbs">
           {p.images.map((i) => (
             <li key={i.id} className={i.id === p.selectedImage ? "sel" : ""}>
-              <button type="button" className="thumb" onClick={() => p.onSelectImage(i.id)} title={i.name}>
+              <button type="button" className="thumb" onClick={() => p.onSelectImage(i.id)} title={i.name}
+                aria-label={`Bild ${i.name} auswählen`} aria-pressed={i.id === p.selectedImage}>
                 <img src={p.urls[i.id]} alt="" />
                 <span className="dots">{i.sources.map((s) => <i key={s} style={{ background: s }} />)}</span>
               </button>

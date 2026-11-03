@@ -9,7 +9,7 @@ import { PALETTE_GROUPS, type Studio } from "../useStudio";
 export function VorschauPane({ s }: { s: Studio }) {
   const { settings, os, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
   return (
-    <div className="pane" role="tabpanel">
+    <div className="pane">
         <section className="card detail" id="vorschau">
           <div className="detail-head">
             <h2>Vorschau <small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"}</small></h2>

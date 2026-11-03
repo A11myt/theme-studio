@@ -370,3 +370,18 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 /* sechs Bereiche: Kopfzeile etwas kompakter */
 .tabs-nav button { padding: 5px 11px; }
 .top .name { width: 180px; }
+
+/* ── Barrierefreiheit ── */
+/* Ränder von Bedienelementen mit ≥ 3:1 Kontrast (WCAG 1.4.11); --line bleibt für Trennlinien */
+:root { --control: #6b6e80; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --control: #80828f; } }
+.ghost, .name, .seg, .chip, .row, .font-sizes input, .source.custom, .drop, .variant, .wiz-choice, .role-editor { border-color: var(--control); }
+.switch input { background: var(--control); }
+/* Sprunglink: nur sichtbar, wenn er per Tab den Fokus hat */
+.skip { position: absolute; left: 12px; top: -60px; z-index: 50; background: var(--accent); color: var(--on-accent); padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+.skip:focus { top: 10px; }
+.main:focus { outline: none; }
+/* Fokus deutlich sichtbar, auch auf farbigen Flächen */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 0 0 4px var(--bg); }
+.sheet:focus { outline: none; }
+.form small { display: inline; }
