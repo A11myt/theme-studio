@@ -23,6 +23,9 @@ const PALETTE_GROUPS: [string, string[]][] = [
   ["Text & Linien", ["on_surface", "on_surface_variant", "outline", "outline_variant", "error", "error_container"]],
 ];
 
+type Tab = "farbe" | "schrift" | "vorschau" | "export";
+const TAB_IDS: Tab[] = ["farbe", "schrift", "vorschau", "export"];
+
 export function App() {
   const [images, setImages] = useState<StoredImage[]>([]);
   const [themes, setThemes] = useState<StoredTheme[]>([]);
@@ -40,6 +43,11 @@ export function App() {
   const [showNerd, setShowNerd] = useState(false);
   const [fontsKey, setFontsKey] = useState(0);
   const [bothModes, setBothModes] = useState(false);
+  const [tab, setTabState] = useState<Tab>(() => {
+    try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }
+    return "farbe";
+  });
+  const setTab = (t: Tab) => { setTabState(t); try { localStorage.setItem("theme-studio-tab", t); } catch { /* egal */ } window.scrollTo(0, 0); };
   const [group, setGroup] = useState<"alle" | "windows" | "linux" | "allgemein">("alle");
 
   // ── Rückgängig / Wiederholen: Stände von Farbe + Schrift (Änderungen in kurzer Folge = ein Schritt) ──
@@ -234,9 +242,10 @@ export function App() {
     if (typing || document.querySelector(".overlay")) return;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+    if (e.altKey && /^[1-4]$/.test(e.key)) { e.preventDefault(); setTab(TAB_IDS[Number(e.key) - 1]); return; }
     if (mod || e.altKey) return;
     const schemes = Object.keys(SCHEMES) as SchemeName[];
-    if (/^[1-9]$/.test(e.key)) update({ scheme: schemes[Number(e.key) - 1] });
+    if (/^[1-9]$/.test(e.key) && tab === "farbe") update({ scheme: schemes[Number(e.key) - 1] });
     else if (e.key === "d") update({ mode: "dark" });
     else if (e.key === "h") update({ mode: "light" });
     else if (e.key === "z") surprise();
@@ -248,7 +257,7 @@ export function App() {
   }, []);
 
   const importInput = useRef<HTMLInputElement>(null);
-  const NAV: [string, string][] = [["farbe", "Farbe"], ["schrift", "Schrift"], ["varianten", "Varianten"], ["vorschau", "Vorschau"], ["export", "Export"]];
+  const TABS = [["farbe", "Farbe"], ["schrift", "Schrift"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
   const bg = image ? urls[image.id] : undefined;
 
   return (
@@ -259,8 +268,11 @@ export function App() {
           <button type="button" aria-pressed={os === "linux"} onClick={() => setOs("linux")}>Linux</button>
           <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
         </div>
-        <nav className="jump" aria-label="Abschnitte">
-          {NAV.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
+        <nav className="tabs-nav" role="tablist" aria-label="Bereiche">
+          {TABS.map(([id, label], i) => (
+            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+              title={`${label} (Alt+${i + 1})`}>{label}</button>
+          ))}
         </nav>
         <span className="grow" />
         <div className="tools">
@@ -282,7 +294,7 @@ export function App() {
         onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />
 
       <main className="main">
-        {/* Ausgangsfarbe & Einstellungen */}
+        {tab === "farbe" && (<div className="pane" role="tabpanel">
         <section className="card setup" id="farbe">
           <div className="hero">
             {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">Kein Bild – nur Farbe</div>}
@@ -322,8 +334,6 @@ export function App() {
           </div>
         </section>
 
-        <div id="schrift" />
-        <FontPanel fonts={fonts} onChange={setFonts} onNerdFonts={() => setShowNerd(true)} refreshKey={fontsKey} />
 
         {/* Alle Varianten nebeneinander */}
         <section id="varianten">
@@ -341,8 +351,18 @@ export function App() {
             })}
           </div>
         </section>
-
-        {/* Gewählte Variante groß + Palette */}
+        <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("schrift")}>Weiter: Schrift →</button></div>
+        </div>)}
+        {tab === "schrift" && (<div className="pane schrift-pane" role="tabpanel">
+          <FontPanel fonts={fonts} onChange={setFonts} onNerdFonts={() => setShowNerd(true)} refreshKey={fontsKey} />
+          <aside className="card mini-preview">
+            <h3>So sieht es aus</h3>
+            <Desktop c={pal} os={os} image={bg} size="large" fonts={fonts} />
+            <TerminalPreview c={pal} t={settings} fonts={fonts} />
+          </aside>
+          <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("vorschau")}>Weiter: Vorschau →</button></div>
+        </div>)}
+        {tab === "vorschau" && (<div className="pane" role="tabpanel">
         <section className="card detail" id="vorschau">
           <div className="detail-head">
             <h2>Vorschau <small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"}</small></h2>
@@ -387,8 +407,16 @@ export function App() {
             ))}
           </div>
         </section>
-
-        {/* Export */}
+        <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("export")}>Weiter: Exportieren →</button></div>
+        </div>)}
+        {tab === "export" && (<div className="pane" role="tabpanel">
+        <section className="card summary">
+          <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
+          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? "dunkel" : "hell"} · {settings.source} · {fonts.mono}</small></span>
+          <span className="grow" />
+          <button type="button" className="ghost" onClick={() => setTab("farbe")}>Farbe ändern</button>
+          <button type="button" className="ghost" onClick={() => setTab("schrift")}>Schrift ändern</button>
+        </section>
         <section className="card export" id="export">
           <h2>Anwenden</h2>
           <div className="cmd">
@@ -448,6 +476,7 @@ export function App() {
             })}
           </ul>
         </section>
+        </div>)}
       </main>
 
       {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}

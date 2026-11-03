@@ -21,7 +21,9 @@ pnpm app:build    # App bauen → src-tauri/target/release/theme-studio
 - **Lesbarkeit**: WCAG-Kontrast der wichtigsten Paare als Ampel, Punkt an jeder Palettenfarbe
 - **Terminal**: 16 ANSI-Farben passend zum Theme (klassische Farbtöne, zur Ausgangsfarbe harmonisiert) mit Vorschau
 - **Zufall**, **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), **Import** exportierter `.theme.json` (auch per Drag & Drop)
-- **Tastenkürzel**: 1–9 Variante, D/H dunkel/hell, Z Zufall, Strg+S speichern
+- **Vier Bereiche** statt einer langen Seite: Farbe → Schrift → Vorschau → Export (Alt+1–4), mit „Weiter“-Knöpfen;
+  der Schrift-Bereich zeigt daneben live Desktop und Terminal, der Export-Bereich oben eine Zusammenfassung
+- **Tastenkürzel**: 1–9 Variante (im Bereich Farbe), D/H dunkel/hell, Z Zufall, Strg+S speichern
 - **Schrift** wie fontgen: Oberfläche, Mono, Akzent + Größen; deine Profile iosevka/hack/jetbrains als Vorlage,
   Auswahl aus den installierten Schriften, Vorschau in den Mini-Desktops. Gespeichert wird nur der Name.
 - **Nerd Fonts von GitHub** (App): Liste des neuesten Releases, Installieren auf Klick – nur Mono + Propo in
