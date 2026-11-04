@@ -10,6 +10,8 @@ export interface WinEnv {
   tools: Record<string, string>;
   logFile: string;
   windowsBuild: string;
+  shell?: string;          // Login-Shell ($SHELL), nur Linux/macOS
+  zdotdir?: string;
 }
 
 export type RegValue = { kind: "Dword"; value: number } | { kind: "Binary"; value: number[] } | { kind: "String"; value: string };

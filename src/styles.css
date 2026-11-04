@@ -412,3 +412,12 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .first-run-choices button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; text-align: left; white-space: normal; height: auto; }
 .first-run-choices button small { font-weight: 400; opacity: .85; }
 @media (max-width: 520px) { .first-run-choices { grid-template-columns: 1fr; } }
+
+/* Shell-Auswahl (Bereich Terminal) */
+.shells { display: grid; gap: 6px; margin: 4px 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.shells-title { font-weight: 600; font-size: .9em; }
+.shells ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.shells li.missing { opacity: .55; }
+.shells small { display: block; color: var(--muted); word-break: break-all; }
+.shells .tag { font-style: normal; font-size: .75em; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--accent); color: var(--on-accent); }
+.shells > button { justify-self: start; }

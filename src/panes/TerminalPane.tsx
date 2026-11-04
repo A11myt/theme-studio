@@ -1,4 +1,5 @@
 import { TerminalPreview } from "../components/TerminalPreview";
+import { ShellPicker } from "../components/ShellPicker";
 import { ompTemplate, p10kOverlay, RIGHT_LABELS } from "../lib/prompt";
 import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
@@ -18,8 +19,9 @@ export function TerminalPane({ s }: { s: Studio }) {
               <button type="button" className="primary" onClick={() => setShowWizard(true)}>{t("Prompt-Assistent …")}</button>
             </div>
             <p className="empty">{prompt.enabled
-              ? t("Beim „Anwenden“ wird dieser Prompt gesetzt – Linux als Ergänzung zu ~/.p10k.zsh, Windows als oh-my-posh-Vorlage für wintheme. Farben folgen dem Wallpaper.")
+              ? t("Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh, bei zsh wahlweise powerlevel10k). Farben kommen aus dem Theme.")
               : t("Aus: dein bisheriger Prompt bleibt. Beim „Anwenden“ wird ein früher gesetzter Studio-Prompt wieder entfernt.")}</p>
+            <ShellPicker prompt={prompt} onChange={setPrompt} />
             <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
             {prompt.enabled && (
               <div className="prompt-summary">
@@ -42,7 +44,7 @@ export function TerminalPane({ s }: { s: Studio }) {
                   <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>{t("Speichern")}</button>
                 </li>
                 <li>
-                  <span><b>{t("oh-my-posh-Vorlage (Windows)")}</b><small>{t("nach %APPDATA%\\wintheme\\ohmyposh.studio.json – wintheme färbt sie ein")}</small></span>
+                  <span><b>{t("oh-my-posh-Vorlage")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als matugen-Platzhalter")}</small></span>
                   <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>{t("Kopieren")}</button>
                   <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>{t("Speichern")}</button>
                 </li>

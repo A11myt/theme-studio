@@ -10,6 +10,7 @@ import { vscodeTheme } from "../vscode";
 import { join, type Bridge, type RegSet, type WinEnv } from "./bridge";
 import { parseJsonc, upsertBlock } from "./jsonc";
 import OMP_DEFAULT from "./ohmyposh-default.json?raw";
+import { chosenShells, detectShells, initLines, promptDir, writeShells } from "../shells";
 import { t as tr } from "../i18n";
 
 export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi";
@@ -293,12 +294,7 @@ async function applyVscode(b: Bridge, session: string, o: ApplyOptions, det: Det
 // ── oh-my-posh ──────────────────────────────────────────────────────────────
 
 export function profileBlock(configPath: string): string {
-  const q = configPath.replace(/'/g, "''");
-  return [MARK_BEGIN_PS,
-    "if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {",
-    `  oh-my-posh init $(if ($PSVersionTable.PSVersion.Major -ge 6) { 'pwsh' } else { 'powershell' }) --config '${q}' | Invoke-Expression`,
-    "}",
-    MARK_END_PS].join("\r\n");
+  return [MARK_BEGIN_PS, ...initLines("pwsh", "omp", configPath, ""), MARK_END_PS].join("\r\n");
 }
 
 export function upsertProfile(text: string | null, block: string | null): string {
@@ -310,28 +306,24 @@ export function upsertProfile(text: string | null, block: string | null): string
 
 async function applyOhmyposh(b: Bridge, session: string, o: ApplyOptions, e: WinEnv): Promise<TargetResult> {
   const details: string[] = [];
-  const config = join(e.home, ".config", "theme-studio", "prompt.omp.json");
+  const config = join(promptDir(e), "prompt.omp.json");
   const template = o.prompt.enabled ? ompTemplate(o.prompt) : OMP_DEFAULT;
   const theme = renderTemplate(template, o.settings);
   JSON.parse(theme);
   await b.write(session, config, theme);
   details.push(`Theme: ${config} (${o.prompt.enabled ? "Prompt-Assistent" : "Standard-Prompt"})`);
-  const block = profileBlock(config);
-  const written: string[] = [];
-  for (const p of psProfiles(e)) {
-    const text = await b.read(p.file);
-    // PowerShell 7 nur, wenn installiert oder schon ein Profil existiert; 5.1 gibt es auf jedem Windows
-    if (p.label === "PowerShell 7" && !e.tools.pwsh && text === null) { details.push(`übersprungen: ${p.label} (nicht installiert)`); continue; }
-    await b.write(session, p.file, upsertProfile(text, block), true);
-    written.push(p.label);
-    details.push(`Profil ${text === null ? "angelegt" : "ergänzt"}: ${p.file}`);
-  }
+  const all = await detectShells(b, e);
+  const shells = chosenShells(all, o.prompt.shells);
+  for (const sh of all.filter((x) => !shells.includes(x))) details.push(`übersprungen: ${sh.label} (${sh.found ? "abgewählt" : "nicht installiert"})`);
+  if (!shells.length) return res("ohmyposh", "skipped", tr("keine Shell ausgewählt – im Bereich Terminal wählen"), details);
+  const w = await writeShells(b, session, shells, { enabled: true, engine: "omp", config, p10kFile: "" });
+  details.push(...w.details);
   const blocked = await policyIssues(b, e);
-  details.push(...blocked.map((w) => `Richtlinie: ${w}`));
+  details.push(...blocked.map((x) => `Richtlinie: ${x}`));
   if (blocked.length) {
     return res("ohmyposh", "warn", tr("Prompt eingerichtet, startet aber nicht: {why}", { why: blocked[0] }), details);
   }
-  return res("ohmyposh", "ok", tr("Prompt in {list} – wirkt in neuen PowerShell-Fenstern", { list: written.join(tr(" und ")) }), details);
+  return res("ohmyposh", "ok", tr("Prompt in {list} – wirkt in neuen Shell-Fenstern", { list: w.done.join(", ") }), details);
 }
 
 // ── komorebi ────────────────────────────────────────────────────────────────

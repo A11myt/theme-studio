@@ -4,6 +4,7 @@
 //   1 = error, 3 = inverse_primary, 8 = grau) → folgt jedem matugen-Wechsel automatisch
 // - oh-my-posh: {{colors.<rolle>.default.hex}} → wintheme färbt bei jedem Wallpaper-Wechsel neu ein
 import type { Palette } from "./color";
+import type { ShellId, ZshEngine } from "./shells";
 
 export type PromptStyle = "lean" | "classic" | "rainbow" | "pure";
 export type Separator = "angled" | "round" | "slanted" | "flat";
@@ -21,6 +22,8 @@ export interface PromptOptions {
   time: TimeFormat;
   char: string;             // Prompt-Zeichen
   transient: boolean;       // ältere Prompts zu einem schlichten ❯ zusammenfalten
+  shells?: ShellId[];       // wohin einbinden (fehlt = alle gefundenen)
+  zshEngine?: ZshEngine;    // zsh: powerlevel10k-Ergänzung oder oh-my-posh (fehlt = p10k, wenn vorhanden)
 }
 
 // entspricht deinem jetzigen .p10k.zsh (lean, 2 Zeilen, Rahmen, wenige Symbole, Transient)

@@ -34,6 +34,8 @@ pub struct WinEnv {
     tools: BTreeMap<String, String>,   // gefundene Programme → Pfad
     log_file: String,
     windows_build: String,
+    shell: String,                     // Login-Shell ($SHELL, nur Linux/macOS)
+    zdotdir: String,                   // $ZDOTDIR (zsh liest dann dort .zshrc)
 }
 
 /// Programm im PATH oder an typischen Installationsorten (scoop, winget, VS Code Benutzer-Installation).
@@ -169,10 +171,20 @@ pub fn host_system() -> (String, String) {
 pub fn win_env() -> WinEnv {
     let s = |p: Option<PathBuf>| p.map(|x| x.to_string_lossy().into_owned()).unwrap_or_default();
     let mut tools = BTreeMap::new();
-    for t in ["komorebic", "oh-my-posh", "code", "code-insiders", "codium", "wt", "pwsh", "powershell", "whkd"] {
+    // Shells: unter Windows kein „bash“ suchen (System32\bash.exe startet WSL) – Git Bash gezielt
+    let shells: &[&str] = if cfg!(windows) { &[] } else { &["bash", "zsh", "fish"] };
+    for t in ["komorebic", "oh-my-posh", "starship", "code", "code-insiders", "codium", "wt", "pwsh", "powershell", "whkd"].iter().chain(shells) {
         if let Some(p) = find_tool(t) {
             tools.insert(t.to_string(), p.to_string_lossy().into_owned());
         }
+    }
+    if cfg!(windows) {
+        // Git for Windows: …\Git\cmd\git.exe → …\Git\bin\bash.exe
+        let from_git = find_tool("git").and_then(|g| g.parent()?.parent().map(|d| d.join("bin").join("bash.exe")));
+        let gb = from_git.into_iter().chain([PathBuf::from(r"C:\Program Files\Git\bin\bash.exe"),
+            env_path("LOCALAPPDATA").unwrap_or_default().join("Programs").join("Git").join("bin").join("bash.exe")])
+            .find(|p| p.is_file());
+        if let Some(p) = gb { tools.insert("git-bash".into(), p.to_string_lossy().into_owned()); }
     }
     WinEnv {
         os: std::env::consts::OS.to_string(),
@@ -184,6 +196,8 @@ pub fn win_env() -> WinEnv {
         tools,
         log_file: data_dir().join("logs").join("apply.log").to_string_lossy().into_owned(),
         windows_build: windows_build(),
+        shell: if cfg!(windows) { String::new() } else { std::env::var("SHELL").unwrap_or_default() },
+        zdotdir: s(env_path("ZDOTDIR")),
     }
 }
 
@@ -284,7 +298,12 @@ pub fn fs_write(session: String, path: String, text: String, bom: bool) -> Resul
         m.files.push(FileBackup { path: path.clone(), backup });
         save_manifest(&session, &m)?;
     }
-    let p = Path::new(&path);
+    // Symlink (z. B. .zshrc aus einem dotfiles-Repo per stow)? Dann das Ziel beschreiben, den Link nicht ersetzen
+    let real = match std::fs::symlink_metadata(&path) {
+        Ok(m) if m.file_type().is_symlink() => std::fs::canonicalize(&path).map_err(|e| format!("{path}: Link zeigt ins Leere ({e})"))?,
+        _ => PathBuf::from(&path),
+    };
+    let p = real.as_path();
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir).map_err(|e| format!("Ordner {}: {e}", dir.display()))?;
     }
