@@ -24,7 +24,7 @@ export interface Bridge {
   regApply(session: string, values: RegSet[]): Promise<void>;
   setWallpaper(path: string): Promise<void>;
   broadcastColors(): Promise<void>;
-  runTool(tool: "komorebic" | "oh-my-posh", args: string[]): Promise<{ code: number; output: string }>;
+  runTool(tool: "komorebic" | "oh-my-posh" | "powershell" | "pwsh", args: string[]): Promise<{ code: number; output: string }>;
   fonts(): Promise<string[]>;
   log(lines: string[]): Promise<string>;
   logTail(maxLines: number): Promise<string>;

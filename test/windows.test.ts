@@ -22,7 +22,7 @@ const PS7 = `${ENV.documents}\\PowerShell\\Microsoft.PowerShell_profile.ps1`;
 const KOMO = `${HOME}\\komorebi.json`;
 const KBAR = `${HOME}\\komorebi.bar.json`;
 
-function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string } } = {}) {
+function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>> } = {}) {
   const fs = new Map(Object.entries(files));
   const dirs = new Set<string>();
   for (const f of fs.keys()) dirs.add(f.slice(0, f.lastIndexOf("\\")));
@@ -40,6 +40,7 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
     broadcastColors: async () => { calls.push("broadcast"); },
     runTool: async (tool, args) => {
       calls.push(`${tool} ${args.join(" ")}`);
+      if (tool === "powershell" || tool === "pwsh") return { code: 0, output: opts.policy?.[tool] ?? "" };
       const k = opts.komorebi ?? { state: 0, reload: 0 };
       return args[0] === "state" ? { code: k.state, output: "" } : { code: k.reload, output: k.output ?? "" };
     },
@@ -120,7 +121,7 @@ describe("Windows anwenden (alles installiert)", () => {
     // komorebi: Theme gesetzt, eigene Werte bleiben, neu geladen
     expect(JSON.parse(w.fs.get(KOMO)!)).toMatchObject({ border: true, theme: { palette: "Custom" } });
     expect(JSON.parse(w.fs.get(KBAR)!)).toMatchObject({ height: 34, theme: { accent: "Base0D" } });
-    expect(w.calls).toEqual([`wallpaper ${OPTS.imagePath}`, "broadcast", "komorebic state", "komorebic reload-configuration"]);
+    expect(w.calls.filter((c) => !/^(powershell|pwsh) /.test(c))).toEqual([`wallpaper ${OPTS.imagePath}`, "broadcast", "komorebic state", "komorebic reload-configuration"]);
     // Registry: 10 Werte, Akzentpalette 8×4 Bytes, dunkel
     expect(w.reg).toHaveLength(10);
     expect((w.reg.find((r) => r.name === "AccentPalette")!.value as any).value).toHaveLength(32);
@@ -226,5 +227,32 @@ describe("Fallstricke", () => {
     expect(d).not.toMatch(/jason/);
     expect(d).toContain("%USERPROFILE%");
     expect(d).toContain("✓ Windows Terminal");
+  });
+
+  it("Ausführungsrichtlinie: wirksame Stufe richtig gelesen", async () => {
+    const { effectivePolicy } = await import("../src/lib/windows/apply");
+    const list = (o: Record<string, string>) => ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"].map((k) => `${k}=${o[k] ?? "Undefined"}`).join("\r\n");
+    expect(effectivePolicy(list({}), "Restricted")).toEqual({ policy: "Restricted", scope: "Standard", managed: false });
+    expect(effectivePolicy(list({ CurrentUser: "RemoteSigned", LocalMachine: "Restricted" }), "Restricted")?.policy).toBe("RemoteSigned");
+    expect(effectivePolicy(list({ MachinePolicy: "AllSigned", CurrentUser: "RemoteSigned" }), "Restricted")).toMatchObject({ policy: "AllSigned", managed: true });
+    expect(effectivePolicy("", "Restricted")).toBeNull();                       // nicht lesbar → keine Behauptung
+  });
+  it("blockierte Richtlinie → Prompt-Ergebnis ⚠ mit Lösung, Firmenvorgabe wird erkannt", async () => {
+    const all = (pol: string, scope = "CurrentUser") => ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"].map((k) => `${k}=${k === scope ? pol : "Undefined"}`).join("\n");
+    const w = fakeWindows({}, { policy: { powershell: all("Undefined"), pwsh: all("AllSigned", "MachinePolicy") } });
+    const { results } = await applyAll(w.b, { ...OPTS, only: ["ohmyposh"] });
+    expect(results[0].status).toBe("warn");
+    expect(results[0].message).toMatch(/Set-ExecutionPolicy -Scope CurrentUser RemoteSigned/);
+    const { conflicts } = await import("../src/lib/windows/apply");
+    const c = await conflicts(w.b, ENV);
+    expect(c.some((x) => /PowerShell 7.*Gruppenrichtlinie/.test(x))).toBe(true);
+    const ok = fakeWindows({}, { policy: { powershell: all("RemoteSigned"), pwsh: all("Undefined") } });
+    expect((await applyAll(ok.b, { ...OPTS, only: ["ohmyposh"] })).results[0].status).toBe("ok");
+  });
+  it("Schriftliste nicht abfragbar → Schrift trotzdem gesetzt, kein falsches „nicht installiert“", async () => {
+    const w = fakeWindows({ [WT]: WT_TEXT }, { fonts: [] });
+    const { results } = await applyAll(w.b, { ...OPTS, only: ["terminal"] });
+    expect(results[0].status).toBe("ok");
+    expect((parseJsonc(w.fs.get(WT)!) as any).profiles.defaults.font.face).toBe(OPTS.fonts.mono);
   });
 });

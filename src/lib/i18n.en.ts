@@ -407,4 +407,7 @@ export const EN: Record<string, string> = {
   "wofür „Anwenden“ Themes einrichtet": "what “Apply” sets up themes for",
   "Wallpaper, Akzentfarbe, Windows Terminal, VS Code, oh-my-posh, komorebi – direkt aus der App": "Wallpaper, accent color, Windows Terminal, VS Code, oh-my-posh, komorebi – straight from the app",
   "über deine Skripte wallthemes + fontgen (matugen, Hyprland, Quickshell …)": "via your wallthemes + fontgen scripts (matugen, Hyprland, Quickshell …)",
+  "Prompt eingerichtet, startet aber nicht: {why}": "Prompt set up, but it won’t start: {why}",
+  "{shell}: Ausführungsrichtlinie „{p}“ blockiert das Profil – der Prompt startet nicht. Einmal in PowerShell ausführen: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned": "{shell}: execution policy “{p}” blocks the profile – the prompt won’t start. Run once in PowerShell: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned",
+  "{shell}: Ausführungsrichtlinie „{p}“ ist per Gruppenrichtlinie vorgegeben (Firma/Admin) – das Profil und damit der Prompt werden dort nicht geladen. Alles andere funktioniert trotzdem.": "{shell}: execution policy “{p}” is enforced by group policy (company/admin) – the profile, and with it the prompt, won’t load there. Everything else still works.",
 };

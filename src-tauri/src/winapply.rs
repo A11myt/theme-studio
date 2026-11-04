@@ -40,6 +40,8 @@ pub struct WinEnv {
 fn find_tool(name: &str) -> Option<PathBuf> {
     let exts: &[&str] = if cfg!(windows) { &[".exe", ".cmd", ".bat"] } else { &[""] };
     let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
+    // Frisch aus der Registry: findet auch Programme, die nach dem Start der App installiert wurden (winget/scoop ändern nur die Registry)
+    dirs.extend(registry_path());
     if cfg!(windows) {
         let home = env_path("USERPROFILE").unwrap_or_default();
         let local = env_path("LOCALAPPDATA").unwrap_or_default();
@@ -52,7 +54,12 @@ fn find_tool(name: &str) -> Option<PathBuf> {
             local.join("Programs").join("VSCodium").join("bin"),
             PathBuf::from(r"C:\Program Files\Microsoft VS Code\bin"),
             PathBuf::from(r"C:\Program Files\komorebi\bin"),
+            PathBuf::from(r"C:\Program Files (x86)\oh-my-posh\bin"),   // winget, maschinenweit
+            PathBuf::from(r"C:\Program Files\oh-my-posh\bin"),
+            PathBuf::from(r"C:\ProgramData\scoop\shims"),             // scoop --global
+            PathBuf::from(r"C:\Program Files\PowerShell\7"),
         ]);
+        if let Some(sc) = env_path("SCOOP") { dirs.push(sc.join("shims")); }
     }
     for d in dirs {
         for e in exts {
@@ -106,6 +113,41 @@ fn windows_build() -> String {
 #[cfg(not(windows))]
 fn windows_build() -> String {
     String::new()
+}
+
+/// PATH aus HKCU\Environment und HKLM\…\Session Manager\Environment (mit %VAR%-Auflösung).
+#[cfg(windows)]
+fn registry_path() -> Vec<PathBuf> {
+    use winreg::{enums::*, RegKey};
+    let expand = |v: String| -> String {
+        let mut out = String::new();
+        let mut rest = v.as_str();
+        while let Some(a) = rest.find('%') {
+            out.push_str(&rest[..a]);
+            let after = &rest[a + 1..];
+            match after.find('%') {
+                Some(b) => {
+                    let name = &after[..b];
+                    out.push_str(&std::env::var(name).unwrap_or_else(|_| format!("%{name}%")));
+                    rest = &after[b + 1..];
+                }
+                None => { out.push_str(&rest[a..]); rest = ""; }
+            }
+        }
+        out.push_str(rest);
+        out
+    };
+    let mut v = Vec::new();
+    for (hive, key) in [(HKEY_CURRENT_USER, "Environment"), (HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment")] {
+        if let Ok(p) = RegKey::predef(hive).open_subkey(key).and_then(|k| k.get_value::<String, _>("Path")) {
+            v.extend(expand(p).split(';').filter(|x| !x.trim().is_empty()).map(|x| PathBuf::from(x.trim())));
+        }
+    }
+    v
+}
+#[cfg(not(windows))]
+fn registry_path() -> Vec<PathBuf> {
+    Vec::new()
 }
 
 /// Betriebssystem, auf dem die App läuft: ("windows" | "linux" | …, lesbarer Name mit Version).
@@ -369,11 +411,15 @@ pub struct RunResult {
 }
 
 /// Erlaubt sind nur komorebic (state, reload-configuration) und oh-my-posh --version.
+const PS_POLICY: &str = "Get-ExecutionPolicy -List | ForEach-Object { \"$($_.Scope)=$($_.ExecutionPolicy)\" }";
+
 #[tauri::command]
 pub fn run_tool(tool: String, args: Vec<String>) -> Result<RunResult, String> {
     let allowed = match tool.as_str() {
         "komorebic" => matches!(args.iter().map(String::as_str).collect::<Vec<_>>().as_slice(), ["state"] | ["reload-configuration"] | ["--version"]),
         "oh-my-posh" => args == ["--version"],
+        // nur lesen: Ausführungsrichtlinie (blockiert sie das Profil, startet der Prompt nicht)
+        "powershell" | "pwsh" => args == ["-NoProfile", "-NonInteractive", "-Command", PS_POLICY],
         _ => false,
     };
     if !allowed {

@@ -111,6 +111,39 @@ export async function conflicts(b: Bridge, e: WinEnv): Promise<string[]> {
   if (await b.exists(join(e.localappdata, "wintheme")) || (await b.exists(startup))) {
     out.push(tr("Das alte wintheme ist noch installiert und färbt bei jedem Wallpaper-Wechsel mit eigenen Farben drüber. Entfernen (Farben bleiben): in dotfiles-windows .\\install.ps1 -Uninstall -KeepColors"));
   }
+  out.push(...(await policyIssues(b, e)));
+  return out;
+}
+
+// ── PowerShell-Ausführungsrichtlinie ────────────────────────────────────────
+// „Restricted“ (Standard bei Windows PowerShell 5.1) oder „AllSigned“ → das Profil wird nicht geladen, der Prompt startet nicht.
+
+export const PS_POLICY = "Get-ExecutionPolicy -List | ForEach-Object { \"$($_.Scope)=$($_.ExecutionPolicy)\" }";
+const SCOPES = ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"];
+
+/** Ausgabe von Get-ExecutionPolicy -List → wirksame Richtlinie; managed = per Gruppenrichtlinie (Firma/Admin) vorgegeben. */
+export function effectivePolicy(output: string, fallback: string): { policy: string; scope: string; managed: boolean } | null {
+  const m = new Map(output.split(/\r?\n/).map((l) => l.trim().split("=")).filter((x) => x.length === 2 && SCOPES.includes(x[0])) as [string, string][]);
+  if (!m.size) return null;                                   // nicht lesbar → nichts behaupten
+  const scope = SCOPES.find((sc) => m.get(sc) && m.get(sc) !== "Undefined");
+  return scope ? { policy: m.get(scope)!, scope, managed: scope.endsWith("Policy") } : { policy: fallback, scope: "Standard", managed: false };
+}
+
+export async function policyIssues(b: Bridge, e: WinEnv): Promise<string[]> {
+  if (e.os !== "windows") return [];
+  const shells = [
+    { tool: "powershell" as const, label: "Windows PowerShell 5.1", fallback: "Restricted", on: true },
+    { tool: "pwsh" as const, label: "PowerShell 7", fallback: "RemoteSigned", on: !!e.tools.pwsh },
+  ];
+  const out: string[] = [];
+  for (const sh of shells.filter((x) => x.on)) {
+    const r = await b.runTool(sh.tool, ["-NoProfile", "-NonInteractive", "-Command", PS_POLICY]).catch(() => null);
+    const p = r && r.code === 0 ? effectivePolicy(r.output, sh.fallback) : null;
+    if (!p || !["Restricted", "AllSigned"].includes(p.policy)) continue;
+    out.push(p.managed
+      ? tr("{shell}: Ausführungsrichtlinie „{p}“ ist per Gruppenrichtlinie vorgegeben (Firma/Admin) – das Profil und damit der Prompt werden dort nicht geladen. Alles andere funktioniert trotzdem.", { shell: sh.label, p: p.policy })
+      : tr("{shell}: Ausführungsrichtlinie „{p}“ blockiert das Profil – der Prompt startet nicht. Einmal in PowerShell ausführen: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned", { shell: sh.label, p: p.policy }));
+  }
   return out;
 }
 
@@ -190,8 +223,11 @@ export function mergeTerminal(text: string | null, c: Palette, o: ApplyOptions, 
 
 async function applyTerminal(b: Bridge, session: string, o: ApplyOptions, det: Detection, c: Palette): Promise<TargetResult> {
   const details: string[] = [];
-  const installed = new Set(o.withFonts ? await b.fonts().catch(() => []) : []);
-  const fontOk = installed.has(o.fonts.mono);
+  const list = o.withFonts ? await b.fonts().catch(() => [] as string[]) : [];
+  const installed = new Set(list);
+  // Liste leer = Schriften ließen sich nicht abfragen → Schrift trotzdem setzen, statt fälschlich „nicht installiert“ zu melden
+  const fontOk = installed.has(o.fonts.mono) || (o.withFonts && list.length === 0);
+  if (o.withFonts && list.length === 0) details.push("Schriftliste nicht abfragbar – Schrift ungeprüft gesetzt");
   let done = 0;
   for (const f of det.where) {
     const text = await b.read(f);
@@ -289,6 +325,11 @@ async function applyOhmyposh(b: Bridge, session: string, o: ApplyOptions, e: Win
     await b.write(session, p.file, upsertProfile(text, block), true);
     written.push(p.label);
     details.push(`Profil ${text === null ? "angelegt" : "ergänzt"}: ${p.file}`);
+  }
+  const blocked = await policyIssues(b, e);
+  details.push(...blocked.map((w) => `Richtlinie: ${w}`));
+  if (blocked.length) {
+    return res("ohmyposh", "warn", tr("Prompt eingerichtet, startet aber nicht: {why}", { why: blocked[0] }), details);
   }
   return res("ohmyposh", "ok", tr("Prompt in {list} – wirkt in neuen PowerShell-Fenstern", { list: written.join(tr(" und ")) }), details);
 }
