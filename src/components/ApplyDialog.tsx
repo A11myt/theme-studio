@@ -70,7 +70,7 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
             <li><b>{t("Farben")}</b><span><i className="sw inline" style={{ background: src }} /> {src} · {SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")}
               {settings.contrast ? t(" · Kontrast {c}", { c: settings.contrast }) : ""}{Object.keys(overrides).length ? t(" · {n} überschrieben", { n: Object.keys(overrides).length }) : ""}</span></li>
             <li><b>{t("Prompt")}</b>{prompt.enabled ? t(prompt.lines > 1 ? "aus dem Studio ({style}, {n} Zeilen)" : "aus dem Studio ({style}, 1 Zeile)", { style: prompt.style, n: prompt.lines }) : t("dein eigener (Studio-Prompt wird entfernt, falls gesetzt)")}</li>
-            <li><b>{t("Über")}</b>{t("wallthemes: alle matugen-Vorlagen + Hooks (Leiste, Terminal, GTK, VS Code …)")}</li>
+            <li><b>{t("Über")}</b>{t("wallthemes: deine Vorlagen + Hooks (Leiste, Terminal, GTK, VS Code …)")}</li>
           </ul>
           <label className="check">
             <input type="checkbox" checked={withFonts} onChange={(e) => setWithFonts(e.target.checked)} />

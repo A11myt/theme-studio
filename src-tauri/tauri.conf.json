@@ -38,7 +38,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "Themes aus Bildern bauen – für matugen und wintheme",
+    "shortDescription": "Color themes from your own wallpapers",
     "category": "GraphicsAndDesign"
   },
   "mainBinaryName": "theme-studio",

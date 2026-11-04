@@ -69,7 +69,7 @@ export function ExportPane({ s }: { s: Studio }) {
               const out = () => renderTemplate(tpl.text, settings, image?.name, fonts);
               return (
                 <li key={tpl.id}>
-                  <span><b>{tpl.name}</b><small>{t("aus deiner Vorlage (matugen-/fontgen-Platzhalter)")}</small></span>
+                  <span><b>{tpl.name}</b><small>{t("aus deiner Vorlage (Platzhalter für Farben und Schriften)")}</small></span>
                   <button type="button" className="ghost" onClick={() => copy(out())}>{t("Kopieren")}</button>
                   <button type="button" className="ghost" onClick={() => saveFile(tpl.output, out())}>{t("Speichern")}</button>
                 </li>

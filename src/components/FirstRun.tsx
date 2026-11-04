@@ -33,7 +33,7 @@ export function FirstRun({ detected, onChoose }: Props) {
                 <b>{LABEL[sys]}{detected?.system === sys ? ` · ${t("erkannt")}` : ""}</b>
                 <small>{t(isWin(sys)
                   ? "Wallpaper, Akzentfarbe, Windows Terminal, VS Code, oh-my-posh, komorebi – direkt aus der App"
-                  : "über deine Skripte wallthemes + fontgen (matugen, Hyprland, Quickshell …)")}</small>
+                  : "über deine Skripte wallthemes + fontgen (Hyprland, Quickshell …)")}</small>
               </button>
             ))}
           </div>

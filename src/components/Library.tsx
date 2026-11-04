@@ -1,4 +1,4 @@
-// Seitenleiste: Bilder hochladen/auswählen, gespeicherte Themes, matugen-Vorlagen.
+// Seitenleiste: Bilder hochladen/auswählen, gespeicherte Themes, eigene Vorlagen.
 import { useRef, useState, type DragEvent } from "react";
 import { hasWallhaven } from "../lib/platform";
 import type { StoredImage, StoredTemplate, StoredTheme } from "../lib/store";
@@ -83,8 +83,8 @@ export function Library(p: Props) {
       </section>
 
       <section>
-        <h2>{t("Vorlagen")}{" "}<small>{t("(matugen)")}</small></h2>
-        <p className="empty">{t("Deine matugen-Vorlagen hochladen (z. B. alacritty.toml) – sie werden mit dem Theme ausgefüllt.")}</p>
+        <h2>{t("Vorlagen")}</h2>
+        <p className="empty">{t("Eigene Vorlagen hochladen (z. B. alacritty.toml mit {{colors.primary.default.hex}}) – sie werden mit dem Theme ausgefüllt.")}</p>
         <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>{t("Vorlage hinzufügen")}</button>
         <input ref={tplInput} type="file" multiple hidden
           onChange={(e) => { p.onAddTemplates([...(e.target.files ?? [])]); e.target.value = ""; }} />

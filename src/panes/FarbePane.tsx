@@ -33,9 +33,9 @@ export function FarbePane({ s }: { s: Studio }) {
             </div>
             <code className="hex">{settings.source}</code>
             {image && <small className="engine" title={image.engine === "matugen"
-              ? t("Mit matugens eigenem Rust-Code berechnet – exakt wie dein System")
-              : t("Näherung im Browser – kann leicht von matugen abweichen")}>
-              {image.engine === "matugen" ? t("· exakt wie matugen") : t("· Näherung")}</small>}
+              ? t("Mit der Rust-Bibliothek material-colors berechnet (WebAssembly)")
+              : t("Näherung im Browser – kann leicht abweichen")}>
+              {image.engine === "matugen" ? t("· exakt") : t("· Näherung")}</small>}
 
             <h2>{t("Modus")}</h2>
             <div className="seg">

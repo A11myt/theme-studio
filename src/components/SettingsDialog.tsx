@@ -48,7 +48,7 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detect
         ) : (
           <div className="pad form">
             <label>
-              <span>{t("Wallpaper-Ordner")}<small>{t("wallhaven-Bilder werden hier gespeichert – auch für wintheme / wallthemes nutzbar")}</small></span>
+              <span>{t("Wallpaper-Ordner")}<small>{t("wallhaven-Bilder werden hier gespeichert")}</small></span>
               <div className="pick">
                 <input className="name" value={s.wallpaperDir} onChange={(e) => setS({ ...s, wallpaperDir: e.target.value })} />
                 <button type="button" className="ghost" onClick={() => choose("wallpaperDir")}>{t("Wählen …")}</button>

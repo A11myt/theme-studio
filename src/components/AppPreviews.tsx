@@ -1,5 +1,5 @@
 // Mini-Ansichten echter Programme im Theme: VS Code (Syntax wie die exportierte Erweiterung), Firefox,
-// Obsidian, Discord. Farben nach denselben Rollen wie deine matugen-Vorlagen.
+// Obsidian, Discord. Farben nach denselben Rollen wie in eigenen Vorlagen.
 import type { CSSProperties, ReactNode } from "react";
 import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";

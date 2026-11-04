@@ -1,7 +1,7 @@
 [package]
 name = "theme-studio"
 version = "0.2.0"
-description = "Theme Studio – Themes aus Bildern für matugen und wintheme"
+description = "Theme Studio – color themes from your own wallpapers"
 authors = ["A11myt"]
 license = "MIT"
 repository = ""

@@ -2,7 +2,7 @@
 name = "studio-color"
 version = "0.1.0"
 edition = "2021"
-description = "Ausgangsfarben eines Bildes – exakt wie matugen 4.2 (material-colors 0.4.2)"
+description = "Source colors of an image (material-colors 0.4.2 as WebAssembly)"
 publish = false
 license = "MIT"
 

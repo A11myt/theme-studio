@@ -44,7 +44,7 @@ export function TerminalPane({ s }: { s: Studio }) {
                   <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>{t("Speichern")}</button>
                 </li>
                 <li>
-                  <span><b>{t("oh-my-posh-Vorlage")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als matugen-Platzhalter")}</small></span>
+                  <span><b>{t("oh-my-posh-Vorlage")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als Platzhalter")}</small></span>
                   <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>{t("Kopieren")}</button>
                   <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>{t("Speichern")}</button>
                 </li>

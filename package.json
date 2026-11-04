@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
-  "description": "Themes aus eigenen Bildern bauen, vergleichen und f\u00fcr Linux (matugen) und Windows (wintheme) exportieren",
+  "description": "Build color themes from your own wallpapers and apply them to Windows and Linux",
   "scripts": {
     "dev": "vite",
     "build": "pnpm typecheck && vite build",

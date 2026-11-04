@@ -103,7 +103,7 @@ export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
             <>
               <h3>{t("So sieht dein Prompt aus")}</h3>
               {term(o)}
-              <p className="empty">{t("Mit „Übernehmen“ wird er im Studio eingeschaltet. Auf dem Rechner landet er beim nächsten „Anwenden“ (Linux: Ergänzung zu ~/.p10k.zsh, Windows: oh-my-posh über wintheme) – oder über die Dateien im Bereich Terminal.")}</p>
+              <p className="empty">{t("Mit „Übernehmen“ wird er im Studio eingeschaltet. Auf dem Rechner landet er beim nächsten „Anwenden“ in den gewählten Shells – oder über die Dateien im Bereich Terminal.")}</p>
             </>
           ) : step.multi ? (
             <>
