@@ -142,10 +142,15 @@ fn register(files: &[PathBuf]) -> Result<(), String> {
         key.set_value(format!("{stem} (TrueType)"), &f.to_string_lossy().into_owned())
             .map_err(|e| e.to_string())?;
     }
-    let _ = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-Command",
-            "Add-Type -Namespace W -Name U -MemberDefinition '[DllImport(\"user32.dll\")] public static extern int SendMessageTimeout(int h,int m,int w,int l,int f,int t,out int r);'; $r=0; [W.U]::SendMessageTimeout(0xffff,0x1D,0,0,2,1000,[ref]$r) | Out-Null"])
-        .status();
+    // Sofort in dieser Sitzung verfügbar machen (sonst erst nach Ab-/Anmelden) und alle Programme benachrichtigen
+    use windows_sys::Win32::Graphics::Gdi::AddFontResourceW;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SendMessageTimeoutW, HWND_BROADCAST, SMTO_ABORTIFHUNG, WM_FONTCHANGE};
+    for f in files {
+        let w: Vec<u16> = f.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
+        unsafe { AddFontResourceW(w.as_ptr()) };
+    }
+    let mut res = 0usize;
+    unsafe { SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 1000, &mut res) };
     Ok(())
 }
 

@@ -402,6 +402,50 @@ pub fn broadcast_colors() {
     }
 }
 
+// ── PowerShell-Ausführungsrichtlinie (direkt gelesen, ohne PowerShell zu starten) ──
+
+/// Je Shell die Stufen wie „Get-ExecutionPolicy -List“: "MachinePolicy=…\nUserPolicy=…\n…" (Undefined = nicht gesetzt).
+#[tauri::command]
+pub fn ps_policy() -> BTreeMap<String, String> {
+    #[allow(unused_mut)] // unter Linux bleibt die Liste leer
+    let mut out = BTreeMap::new();
+    #[cfg(windows)]
+    {
+        use winreg::{enums::*, RegKey};
+        let reg = |hive, key: &str, val: &str| RegKey::predef(hive).open_subkey(key).and_then(|k| k.get_value::<String, _>(val)).ok();
+        // Gruppenrichtlinie „Skriptausführung aktivieren“: EnableScripts 0 → Restricted, 1 → ExecutionPolicy
+        let gpo = |hive, key: &str| -> String {
+            match RegKey::predef(hive).open_subkey(key).and_then(|k| k.get_value::<u32, _>("EnableScripts")) {
+                Ok(0) => "Restricted".into(),
+                Ok(_) => reg(hive, key, "ExecutionPolicy").unwrap_or_else(|| "Undefined".into()),
+                Err(_) => "Undefined".into(),
+            }
+        };
+        let process = std::env::var("PSExecutionPolicyPreference").ok().filter(|v| !v.is_empty()).unwrap_or_else(|| "Undefined".into());
+        let fmt = |v: [String; 5]| ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"]
+            .iter().zip(v).map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join("\n");
+
+        let ids = r"SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell";
+        let wp = r"SOFTWARE\Policies\Microsoft\Windows\PowerShell";
+        out.insert("powershell".into(), fmt([gpo(HKEY_LOCAL_MACHINE, wp), gpo(HKEY_CURRENT_USER, wp), process.clone(),
+            reg(HKEY_CURRENT_USER, ids, "ExecutionPolicy").unwrap_or_else(|| "Undefined".into()),
+            reg(HKEY_LOCAL_MACHINE, ids, "ExecutionPolicy").unwrap_or_else(|| "Undefined".into())]));
+
+        if let Some(pwsh) = find_tool("pwsh") {
+            // PowerShell 7: eigene Gruppenrichtlinie, sonst powershell.config.json (Benutzer bzw. neben pwsh.exe)
+            let cfg = |p: PathBuf| std::fs::read_to_string(p).ok()
+                .and_then(|t| serde_json::from_str::<serde_json::Value>(t.trim_start_matches('\u{feff}')).ok())
+                .and_then(|j| j.get("Microsoft.PowerShell:ExecutionPolicy").and_then(|v| v.as_str()).map(String::from))
+                .unwrap_or_else(|| "Undefined".into());
+            let core = r"SOFTWARE\Policies\Microsoft\PowerShellCore";
+            let user = PathBuf::from(documents_dir()).join("PowerShell").join("powershell.config.json");
+            let machine = pwsh.parent().map(|d| d.join("powershell.config.json")).unwrap_or_default();
+            out.insert("pwsh".into(), fmt([gpo(HKEY_LOCAL_MACHINE, core), gpo(HKEY_CURRENT_USER, core), process, cfg(user), cfg(machine)]));
+        }
+    }
+    out
+}
+
 // ── Programme starten (nur erlaubte) ────────────────────────────────────────
 
 #[derive(Serialize)]
@@ -411,15 +455,11 @@ pub struct RunResult {
 }
 
 /// Erlaubt sind nur komorebic (state, reload-configuration) und oh-my-posh --version.
-const PS_POLICY: &str = "Get-ExecutionPolicy -List | ForEach-Object { \"$($_.Scope)=$($_.ExecutionPolicy)\" }";
-
 #[tauri::command]
 pub fn run_tool(tool: String, args: Vec<String>) -> Result<RunResult, String> {
     let allowed = match tool.as_str() {
         "komorebic" => matches!(args.iter().map(String::as_str).collect::<Vec<_>>().as_slice(), ["state"] | ["reload-configuration"] | ["--version"]),
         "oh-my-posh" => args == ["--version"],
-        // nur lesen: Ausführungsrichtlinie (blockiert sie das Profil, startet der Prompt nicht)
-        "powershell" | "pwsh" => args == ["-NoProfile", "-NonInteractive", "-Command", PS_POLICY],
         _ => false,
     };
     if !allowed {

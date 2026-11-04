@@ -5,6 +5,7 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+#[cfg(not(target_os = "windows"))]
 use std::process::Command;
 
 const SCHEMES: [&str; 9] = ["tonal-spot", "vibrant", "expressive", "fidelity", "content", "fruit-salad", "rainbow", "neutral", "monochrome"];
@@ -42,6 +43,7 @@ pub struct Prompt {
 }
 
 /// Prompt-Datei schreiben (an) oder entfernen (aus).
+#[cfg(not(target_os = "windows"))]
 fn write_prompt(path: PathBuf, enabled: bool, content: &str, what: &str, log: &mut Vec<String>) {
     let r = if enabled {
         path.parent().map(std::fs::create_dir_all).transpose().and_then(|_| std::fs::write(&path, content))
@@ -94,12 +96,8 @@ fn tool(name: &str) -> PathBuf {
     if local.is_file() { local } else { PathBuf::from(name) }
 }
 
+#[cfg(not(target_os = "windows"))]
 fn run(cmd: &mut Command, label: &str, log: &mut Vec<String>) -> bool {
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-    }
     match cmd.output() {
         Ok(o) => {
             let text = String::from_utf8_lossy(&o.stdout).to_string() + &String::from_utf8_lossy(&o.stderr);
@@ -148,27 +146,9 @@ fn apply_blocking(r: ApplyRequest) -> Result<String, String> {
 }
 
 #[cfg(target_os = "windows")]
-fn apply_blocking(r: ApplyRequest) -> Result<String, String> {
-    let mut log = Vec::new();
-    let base = PathBuf::from(std::env::var("LOCALAPPDATA").map_err(|e| e.to_string())?).join("wintheme");
-    let py = base.join("venv").join("Scripts").join("python.exe");
-    let script = base.join("wintheme.py");
-    if !py.is_file() || !script.is_file() {
-        return Err("wintheme ist nicht installiert – in dotfiles-windows: .\\install.ps1".into());
-    }
-    if let Some(p) = &r.prompt {
-        let appdata = PathBuf::from(std::env::var("APPDATA").map_err(|e| e.to_string())?);
-        write_prompt(appdata.join("wintheme").join("ohmyposh.studio.json"), p.enabled, &p.omp, "Prompt (oh-my-posh)", &mut log);
-    }
-    let mut c = Command::new(py);
-    c.arg(script);
-    if let Some(img) = &r.image { c.arg(img); }
-    c.args(["--color", &r.source, "--scheme", &r.scheme, "--mode", &r.mode, "--contrast", &r.contrast.to_string()]);
-    if let Some(f) = &r.fonts { c.args(["--font", &f.mono]); }
-    for (k, v) in &r.overrides { c.args(["--override", &format!("{k}={v}")]); }
-    let ok = run(&mut c, "Windows, Terminal, VS Code, komorebi (wintheme)", &mut log);
-    let text = log.join("\n");
-    if ok { Ok(text) } else { Err(text) }
+fn apply_blocking(_r: ApplyRequest) -> Result<String, String> {
+    // Unter Windows wendet die App selbst an (winapply.rs + src/lib/windows) – kein Python, kein wintheme.
+    Err("Dieser Weg (wallthemes/fontgen) ist für Linux. Unter Windows: ⚙ Einstellungen → System → Windows.".into())
 }
 
 #[cfg(test)]

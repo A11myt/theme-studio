@@ -40,10 +40,10 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
     broadcastColors: async () => { calls.push("broadcast"); },
     runTool: async (tool, args) => {
       calls.push(`${tool} ${args.join(" ")}`);
-      if (tool === "powershell" || tool === "pwsh") return { code: 0, output: opts.policy?.[tool] ?? "" };
       const k = opts.komorebi ?? { state: 0, reload: 0 };
       return args[0] === "state" ? { code: k.state, output: "" } : { code: k.reload, output: k.output ?? "" };
     },
+    psPolicy: async () => opts.policy ?? {},
     fonts: async () => opts.fonts ?? ["Iosevka Nerd Font Mono", "Hack Nerd Font Mono"],
     log: async (lines) => { log.push(...lines); return "apply.log"; },
     logTail: async () => log.slice(-20).join("\n"),
@@ -121,7 +121,7 @@ describe("Windows anwenden (alles installiert)", () => {
     // komorebi: Theme gesetzt, eigene Werte bleiben, neu geladen
     expect(JSON.parse(w.fs.get(KOMO)!)).toMatchObject({ border: true, theme: { palette: "Custom" } });
     expect(JSON.parse(w.fs.get(KBAR)!)).toMatchObject({ height: 34, theme: { accent: "Base0D" } });
-    expect(w.calls.filter((c) => !/^(powershell|pwsh) /.test(c))).toEqual([`wallpaper ${OPTS.imagePath}`, "broadcast", "komorebic state", "komorebic reload-configuration"]);
+    expect(w.calls).toEqual([`wallpaper ${OPTS.imagePath}`, "broadcast", "komorebic state", "komorebic reload-configuration"]);
     // Registry: 10 Werte, Akzentpalette 8×4 Bytes, dunkel
     expect(w.reg).toHaveLength(10);
     expect((w.reg.find((r) => r.name === "AccentPalette")!.value as any).value).toHaveLength(32);

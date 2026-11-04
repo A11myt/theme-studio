@@ -118,7 +118,6 @@ export async function conflicts(b: Bridge, e: WinEnv): Promise<string[]> {
 // ── PowerShell-Ausführungsrichtlinie ────────────────────────────────────────
 // „Restricted“ (Standard bei Windows PowerShell 5.1) oder „AllSigned“ → das Profil wird nicht geladen, der Prompt startet nicht.
 
-export const PS_POLICY = "Get-ExecutionPolicy -List | ForEach-Object { \"$($_.Scope)=$($_.ExecutionPolicy)\" }";
 const SCOPES = ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"];
 
 /** Ausgabe von Get-ExecutionPolicy -List → wirksame Richtlinie; managed = per Gruppenrichtlinie (Firma/Admin) vorgegeben. */
@@ -132,13 +131,14 @@ export function effectivePolicy(output: string, fallback: string): { policy: str
 export async function policyIssues(b: Bridge, e: WinEnv): Promise<string[]> {
   if (e.os !== "windows") return [];
   const shells = [
-    { tool: "powershell" as const, label: "Windows PowerShell 5.1", fallback: "Restricted", on: true },
-    { tool: "pwsh" as const, label: "PowerShell 7", fallback: "RemoteSigned", on: !!e.tools.pwsh },
+    { tool: "powershell" as const, label: "Windows PowerShell 5.1", fallback: "Restricted" },
+    { tool: "pwsh" as const, label: "PowerShell 7", fallback: "RemoteSigned" },
   ];
+  const lists = await b.psPolicy().catch(() => ({} as Partial<Record<"powershell" | "pwsh", string>>));
   const out: string[] = [];
-  for (const sh of shells.filter((x) => x.on)) {
-    const r = await b.runTool(sh.tool, ["-NoProfile", "-NonInteractive", "-Command", PS_POLICY]).catch(() => null);
-    const p = r && r.code === 0 ? effectivePolicy(r.output, sh.fallback) : null;
+  for (const sh of shells) {
+    const raw = lists[sh.tool];
+    const p = raw ? effectivePolicy(raw, sh.fallback) : null;
     if (!p || !["Restricted", "AllSigned"].includes(p.policy)) continue;
     out.push(p.managed
       ? tr("{shell}: Ausführungsrichtlinie „{p}“ ist per Gruppenrichtlinie vorgegeben (Firma/Admin) – das Profil und damit der Prompt werden dort nicht geladen. Alles andere funktioniert trotzdem.", { shell: sh.label, p: p.policy })

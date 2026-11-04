@@ -6,32 +6,45 @@ mod nerdfonts;
 /// Installierte Schriftfamilien (für die Schriftauswahl): Linux über fc-list, Windows über .NET.
 #[tauri::command]
 fn list_fonts() -> Vec<String> {
-  use std::process::Command;
   #[cfg(target_os = "windows")]
-  let out = {
-    use std::os::windows::process::CommandExt;
-    Command::new("powershell")
-      .args(["-NoProfile", "-NonInteractive", "-Command",
-        "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Add-Type -AssemblyName System.Drawing; (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name"])
-      .creation_flags(0x0800_0000)   // CREATE_NO_WINDOW: kein aufblitzendes Konsolenfenster
-      .output()
-  };
+  let mut names = gdi_fonts();
   #[cfg(not(target_os = "windows"))]
-  let out = Command::new("fc-list").args([":", "family"]).output();
-  let Ok(out) = out else { return Vec::new() };
-  let mut names: Vec<String> = String::from_utf8_lossy(&out.stdout)
-    .lines()
-    .flat_map(|l| l.split(',').next())           // fc-list: "Name,Lokalisierter Name"
-    .map(|n| n.trim().to_string())
-    .filter(|n| !n.is_empty())
-    .collect();
-  // PowerShell gesperrt (z. B. Firmenrichtlinie)? Dann aus der Registry: "Hack Nerd Font Mono Bold (TrueType)" → Familie
-  #[cfg(target_os = "windows")]
-  if names.is_empty() {
-    names = registry_fonts();
-  }
+  let mut names: Vec<String> = {
+    let Ok(out) = std::process::Command::new("fc-list").args([":", "family"]).output() else { return Vec::new() };
+    String::from_utf8_lossy(&out.stdout)
+      .lines()
+      .flat_map(|l| l.split(',').next())           // fc-list: "Name,Lokalisierter Name"
+      .map(|n| n.trim().to_string())
+      .filter(|n| !n.is_empty())
+      .collect()
+  };
   names.sort_by_key(|n| n.to_lowercase());
   names.dedup();
+  names
+}
+
+/// Alle Schriftfamilien direkt von Windows (GDI) – dieselben Namen, die Terminal und VS Code verwenden.
+#[cfg(target_os = "windows")]
+fn gdi_fonts() -> Vec<String> {
+  use windows_sys::Win32::Foundation::LPARAM;
+  use windows_sys::Win32::Graphics::Gdi::{EnumFontFamiliesExW, GetDC, ReleaseDC, DEFAULT_CHARSET, LOGFONTW, TEXTMETRICW};
+  unsafe extern "system" fn each(lf: *const LOGFONTW, _tm: *const TEXTMETRICW, _ty: u32, lp: LPARAM) -> i32 {
+    let names = &mut *(lp as *mut Vec<String>);
+    let face = &(*lf).lfFaceName;
+    let len = face.iter().position(|&c| c == 0).unwrap_or(face.len());
+    let name = String::from_utf16_lossy(&face[..len]);
+    if !name.is_empty() && !name.starts_with('@') { names.push(name); }   // @… = vertikale Varianten
+    1
+  }
+  let mut names: Vec<String> = Vec::new();
+  unsafe {
+    let dc = GetDC(std::ptr::null_mut());
+    let mut lf: LOGFONTW = std::mem::zeroed();
+    lf.lfCharSet = DEFAULT_CHARSET as u8;
+    EnumFontFamiliesExW(dc, &lf, Some(each), &mut names as *mut Vec<String> as LPARAM, 0);
+    ReleaseDC(std::ptr::null_mut(), dc);
+  }
+  if names.is_empty() { names = registry_fonts(); }
   names
 }
 
@@ -89,7 +102,7 @@ pub fn run() {
     })
     .invoke_handler(tauri::generate_handler![list_fonts, nerdfonts::nerd_fonts_list, nerdfonts::nerd_font_install,
       files::default_dirs, files::wallhaven_download, files::save_text, files::save_bytes, apply::apply_theme,
-      winapply::host_system, winapply::win_env, winapply::fs_exists, winapply::fs_read, winapply::fs_write, winapply::backup_begin,
+      winapply::host_system, winapply::ps_policy, winapply::win_env, winapply::fs_exists, winapply::fs_read, winapply::fs_write, winapply::backup_begin,
       winapply::reg_apply, winapply::set_wallpaper, winapply::broadcast_colors, winapply::run_tool,
       winapply::log_append, winapply::log_tail, winapply::backup_list, winapply::backup_restore
     ])
