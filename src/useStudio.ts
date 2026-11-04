@@ -6,6 +6,7 @@ import { DEFAULT_FONTS, type Fonts } from "./lib/fonts";
 import { DEFAULT_PROMPT, type PromptOptions } from "./lib/prompt";
 import { copyText, errText, isTauri, saveBytes, saveText } from "./lib/platform";
 import { loadSettings, type AppSettings } from "./lib/settings";
+import { detectSystem, loadSystemChoice, resolveSystem, storeSystemChoice, type Detected, type SystemChoice } from "./lib/system";
 import { vscodeSettings, vscodeVsix } from "./lib/vscode";
 import { readShareLink, shareLink } from "./lib/share";
 import { db, uid, type StoredImage, type StoredTemplate, type StoredTheme } from "./lib/store";
@@ -52,6 +53,18 @@ export function useStudio() {
   // Einzeltasten-Kürzel (1–9, D, H, Z) – abschaltbar, z. B. für Spracheingabe/Screenreader (WCAG 2.1.4)
   const [singleKeys, setSingleKeysState] = useState(() => { try { return localStorage.getItem("theme-studio-single-keys") !== "0"; } catch { return true; } });
   const setSingleKeys = (on: boolean) => { setSingleKeysState(on); try { localStorage.setItem("theme-studio-single-keys", on ? "1" : "0"); } catch { /* egal */ } };
+  // Zielsystem fürs Anwenden: null = erster Start (App fragt einmal), sonst auto/windows/linux
+  const [systemChoice, setSystemChoiceState] = useState<SystemChoice | null>(loadSystemChoice);
+  const [detected, setDetected] = useState<Detected>();
+  const setSystemChoice = (c: SystemChoice) => {
+    setSystemChoiceState(c);
+    storeSystemChoice(c);
+    if (detected) setOs(resolveSystem(c, detected.system));   // Vorschau folgt
+  };
+  const system = resolveSystem(systemChoice, detected?.system ?? "linux");
+  useEffect(() => {
+    void detectSystem().then((d) => { setDetected(d); setOs(resolveSystem(loadSystemChoice(), d.system)); });
+  }, []);
   const [tab, setTabState] = useState<Tab>(() => {
     try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }
     return "farbe";
@@ -406,6 +419,10 @@ export function useStudio() {
     copy,
     shareTheme,
     singleKeys,
+    systemChoice,
+    setSystemChoice,
+    detected,
+    system,
     setSingleKeys,
     saveOpts,
     report,

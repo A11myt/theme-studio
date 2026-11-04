@@ -47,3 +47,13 @@ describe("Prompt", () => {
     });
   }
 });
+
+import { resolveSystem } from "../src/lib/system";
+describe("Zielsystem", () => {
+  it("auto/erster Start folgt der Erkennung, feste Wahl gewinnt", () => {
+    expect(resolveSystem(null, "windows")).toBe("windows");
+    expect(resolveSystem("auto", "linux")).toBe("linux");
+    expect(resolveSystem("linux", "windows")).toBe("linux");
+    expect(resolveSystem("windows", "linux")).toBe("windows");
+  });
+});

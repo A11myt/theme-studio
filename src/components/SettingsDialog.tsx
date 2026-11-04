@@ -4,16 +4,20 @@ import { useDialog } from "../lib/useDialog";
 import { isTauri } from "../lib/platform";
 import { pickFolder, type AppSettings } from "../lib/settings";
 import { setLang, t, useLang } from "../lib/i18n";
+import type { Detected, SystemChoice } from "../lib/system";
 
 interface Props {
   value: AppSettings;
   singleKeys: boolean;
   onSingleKeys: (on: boolean) => void;
+  system: SystemChoice;
+  detected?: Detected;
+  onSystem: (c: SystemChoice) => void;
   onSave: (s: AppSettings) => void;
   onClose: () => void;
 }
 
-export function SettingsDialog({ value, singleKeys, onSingleKeys, onSave, onClose }: Props) {
+export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detected, onSystem, onSave, onClose }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [s, setS] = useState(value);
@@ -64,6 +68,18 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, onSave, onClos
           </div>
         )}
         <div className="pad form">
+          <div className="lang-row">
+            <span>{t("System")}<small>{t("wofür „Anwenden“ Themes einrichtet")}</small></span>
+            <div className="seg" role="group" aria-label={t("System")}>
+              <button type="button" aria-pressed={system === "auto"} onClick={() => onSystem("auto")}
+                title={detected ? t("erkannt: {name}", { name: detected.name }) : undefined}>
+                {t("Automatisch")}{detected ? ` (${detected.system === "windows" ? "Windows" : "Linux"})` : ""}</button>
+              <button type="button" aria-pressed={system === "windows"} onClick={() => onSystem("windows")}>Windows</button>
+              <button type="button" aria-pressed={system === "linux"} onClick={() => onSystem("linux")}>Linux</button>
+            </div>
+          </div>
+          {detected && system !== "auto" && system !== detected.system &&
+            <small className="warn">{t("Achtung: Die App läuft auf {name} – Anwenden für {sys} wird hier vermutlich nicht funktionieren.", { name: detected.name, sys: system === "windows" ? "Windows" : "Linux" })}</small>}
           <div className="lang-row">
             <span>{t("Sprache")}</span>
             <div className="seg" role="group" aria-label={t("Sprache")}>

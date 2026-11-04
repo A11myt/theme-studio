@@ -108,6 +108,21 @@ fn windows_build() -> String {
     String::new()
 }
 
+/// Betriebssystem, auf dem die App läuft: ("windows" | "linux" | …, lesbarer Name mit Version).
+#[tauri::command]
+pub fn host_system() -> (String, String) {
+    let os = std::env::consts::OS.to_string();
+    let name = if cfg!(windows) {
+        windows_build()
+    } else {
+        std::fs::read_to_string("/etc/os-release")
+            .ok()
+            .and_then(|t| t.lines().find_map(|l| l.strip_prefix("PRETTY_NAME=").map(|v| v.trim_matches('"').to_string())))
+            .unwrap_or_default()
+    };
+    (os, name)
+}
+
 #[tauri::command]
 pub fn win_env() -> WinEnv {
     let s = |p: Option<PathBuf>| p.map(|x| x.to_string_lossy().into_owned()).unwrap_or_default();

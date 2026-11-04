@@ -404,3 +404,11 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .win-note { margin: 0; padding: 8px 10px; background: var(--panel-2); border-radius: 8px; }
 .small { font-size: .75rem; overflow-wrap: anywhere; }
 .win-warn { margin: 0; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, #e6c34a 18%, var(--panel-2)); border-left: 3px solid #e6c34a; }
+
+/* System-Wahl (Einstellungen + erster Start) */
+.lang-row > span small { display: block; color: var(--muted, inherit); opacity: .8; font-size: .85em; }
+.first-run { max-width: 560px; }
+.first-run-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.first-run-choices button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; text-align: left; white-space: normal; height: auto; }
+.first-run-choices button small { font-weight: 400; opacity: .85; }
+@media (max-width: 520px) { .first-run-choices { grid-template-columns: 1fr; } }
