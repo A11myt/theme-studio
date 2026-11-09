@@ -14,7 +14,7 @@ export interface WinEnv {
   zdotdir?: string;
 }
 
-export type RegValue = { kind: "Dword"; value: number } | { kind: "Binary"; value: number[] } | { kind: "String"; value: string };
+export type RegValue = { kind: "Dword"; value: number } | { kind: "Binary"; value: number[] } | { kind: "String"; value: string } | { kind: "Delete" };
 export interface RegSet { key: string; name: string; value: RegValue }
 
 export interface Bridge {
@@ -34,6 +34,9 @@ export interface Bridge {
   logTail(maxLines: number): Promise<string>;
   backups(): Promise<{ id: string; label: string; files: number; registry: number }[]>;
   restore(id: string): Promise<string[]>;
+  /** Originale (Stand vor dem ersten Theme-Studio-Eingriff), dauerhaft gemerkt. */
+  origGet(): Promise<Record<string, unknown>>;
+  origSetOnce(key: string, value: unknown): Promise<boolean>;
 }
 
 /** Echte Verbindung (Tauri-App). */
@@ -55,6 +58,8 @@ export async function tauriBridge(): Promise<Bridge> {
     logTail: (maxLines) => invoke("log_tail", { maxLines }),
     backups: () => invoke("backup_list"),
     restore: (id) => invoke("backup_restore", { session: id }),
+    origGet: () => invoke("orig_get"),
+    origSetOnce: (key, value) => invoke("orig_set_once", { key, value }),
   };
 }
 

@@ -36,7 +36,7 @@ On first start the app asks which system it should apply themes to (detected aut
   oh-my-posh (zsh: powerlevel10k or oh-my-posh)
 - **Apply on Windows** – no scripts, no Python: wallpaper, accent color and light/dark, Windows Terminal scheme +
   font, VS Code colors + font, PowerShell prompt, komorebi borders and bar. Shows beforehand what was found and
-  what is missing (with install hints), logs every step, **undo** restores the previous state,
+  what is missing (with install hints), logs every step, **undo** restores the previous state, **reset to default** removes everything Theme Studio ever changed (back to how Windows was before, otherwise Windows defaults),
   **copy diagnostics** for help (user name redacted)
 - **Apply on Linux** via your own `wallthemes` + `fontgen` scripts
 - **Previews** of VS Code, Firefox, Obsidian and Discord; 16 ANSI colors harmonized to your theme

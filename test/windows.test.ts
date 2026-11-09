@@ -22,11 +22,12 @@ const PS7 = `${ENV.documents}\\PowerShell\\Microsoft.PowerShell_profile.ps1`;
 const KOMO = `${HOME}\\komorebi.json`;
 const KBAR = `${HOME}\\komorebi.bar.json`;
 
-function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>> } = {}) {
+function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>>; orig?: Record<string, unknown> } = {}) {
   const fs = new Map(Object.entries(files));
   const dirs = new Set<string>();
   for (const f of fs.keys()) dirs.add(f.slice(0, f.lastIndexOf("\\")));
   const reg: RegSet[] = [];
+  const orig = new Map<string, unknown>(Object.entries(opts.orig ?? {}));
   const log: string[] = [];
   const calls: string[] = [];
   const b: Bridge = {
@@ -44,13 +45,15 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
       return args[0] === "state" ? { code: k.state, output: "" } : { code: k.reload, output: k.output ?? "" };
     },
     psPolicy: async () => opts.policy ?? {},
+    origGet: async () => Object.fromEntries(orig),
+    origSetOnce: async (k, v) => { if (orig.has(k)) return false; orig.set(k, v); return true; },
     fonts: async () => opts.fonts ?? ["Iosevka Nerd Font Mono", "Hack Nerd Font Mono"],
     log: async (lines) => { log.push(...lines); return "apply.log"; },
     logTail: async () => log.slice(-20).join("\n"),
     backups: async () => [],
     restore: async () => [],
   };
-  return { b, fs, reg, log, calls, dirs };
+  return { b, fs, reg, log, calls, dirs, orig };
 }
 
 const OPTS: ApplyOptions = {
@@ -254,5 +257,52 @@ describe("Fallstricke", () => {
     const { results } = await applyAll(w.b, { ...OPTS, only: ["terminal"] });
     expect(results[0].status).toBe("ok");
     expect((parseJsonc(w.fs.get(WT)!) as any).profiles.defaults.font.face).toBe(OPTS.fonts.mono);
+  });
+});
+
+describe("Auf Standard zurücksetzen", () => {
+  const WT_USER = WT_TEXT.replace('"defaults": { "elevate": true }', '"defaults": { "elevate": true, "colorScheme": "Campbell", "font": { "face": "Consolas" } }');
+  it("nach Anwenden: alles von Theme Studio raus, eigene Einstellungen zurück, selbst rückgängig machbar", async () => {
+    const { resetAll } = await import("../src/lib/windows/reset");
+    const w = fakeWindows({ [WT]: WT_USER, [VS]: VS_TEXT, [PS5]: PS_TEXT, [KOMO]: '{ "border": true, "theme": { "palette": "Base16", "name": "Ashes" } }', [KBAR]: '{ "height": 34 }' });
+    await applyAll(w.b, OPTS);
+    await applyAll(w.b, { ...OPTS, settings: { ...OPTS.settings, scheme: "vibrant" } });   // zweimal: Original bleibt das erste
+    expect(w.orig.get(`wt|${WT}`)).toEqual({ colorScheme: "Campbell", font: { face: "Consolas" }, theme: null });
+    const { results, session } = await resetAll(w.b);
+    expect(results.every((r) => r.status === "ok")).toBe(true);
+    expect(session).toBeTruthy();
+    const wt = parseJsonc(w.fs.get(WT)!) as any;
+    expect(wt.schemes.map((s: any) => s.name)).toEqual(["Campbell"]);
+    expect(wt.profiles.defaults).toEqual({ elevate: true, colorScheme: "Campbell", font: { face: "Consolas" } });
+    expect(wt.theme).toBeUndefined();
+    expect(w.fs.get(VS)).not.toContain("theme-studio");
+    expect(parseJsonc(w.fs.get(VS)!)).toEqual(parseJsonc(VS_TEXT));
+    expect(w.fs.get(PS5)).not.toContain("theme-studio");
+    expect(w.fs.get(PS5)).toContain("oh-my-posh init pwsh --config 'alt.json'");
+    expect((parseJsonc(w.fs.get(KOMO)!) as any).theme).toEqual({ palette: "Base16", name: "Ashes" });
+    expect((parseJsonc(w.fs.get(KBAR)!) as any).theme).toBeUndefined();
+    expect(w.log.join("\n")).toMatch(/Auf Standard zurückgesetzt/);
+  });
+  it("Registry: Original gewinnt (auch „gab es nicht“ → löschen), sonst Windows-Standard", async () => {
+    const { resetRegistry, REG_TARGETS, WINDOWS_DEFAULT } = await import("../src/lib/windows/reset");
+    expect(REG_TARGETS).toEqual(registryValues(OPTS.settings, false).map((v) => [v.key, v.name]));
+    const T = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    const { values, fromOriginal } = resetRegistry({ [`reg|${T}|AppsUseLightTheme`]: { kind: "Dword", value: 0 }, "reg|Control Panel\\Desktop|AutoColorization": null });
+    expect(fromOriginal).toBe(2);
+    expect(values.find((v) => v.name === "AppsUseLightTheme")!.value).toEqual({ kind: "Dword", value: 0 });
+    expect(values.find((v) => v.name === "AutoColorization")!.value).toEqual({ kind: "Delete" });
+    expect(values.find((v) => v.name === "AccentColor")!.value).toEqual(WINDOWS_DEFAULT.AccentColor);
+  });
+  it("ohne gemerkte Originale (ältere Version angewendet): Theme-Studio-Reste trotzdem raus", async () => {
+    const { resetAll } = await import("../src/lib/windows/reset");
+    const w = fakeWindows({ [WT]: WT_TEXT, [VS]: VS_TEXT, [PS5]: PS_TEXT, [KOMO]: "{}" });
+    await applyAll(w.b, OPTS);
+    w.orig.clear();
+    await resetAll(w.b);
+    const wt = parseJsonc(w.fs.get(WT)!) as any;
+    expect(wt.profiles.defaults.colorScheme).toBeUndefined();
+    expect(wt.schemes.map((s: any) => s.name)).toEqual(["Campbell"]);
+    expect((parseJsonc(w.fs.get(KOMO)!) as any).theme).toBeUndefined();
+    expect(w.reg.slice(-10).find((r) => r.name === "AppsUseLightTheme")!.value).toEqual({ kind: "Dword", value: 1 });
   });
 });

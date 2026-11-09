@@ -245,6 +245,7 @@ pub enum RegValue {
     Dword(u32),
     Binary(Vec<u8>),
     String(String),
+    Delete, // nur beim Setzen: Wert entfernen (z. B. „gab es vor Theme Studio nicht“)
 }
 
 fn manifest_path(session: &str) -> Result<PathBuf, String> {
@@ -321,6 +322,44 @@ pub fn fs_write(session: String, path: String, text: String, bom: bool) -> Resul
     })
 }
 
+// ── Originale (dauerhaft, werden nie aufgeräumt) ─────────────────────────────
+// Schlüssel: "reg|<key>|<name>" (Option<RegValue>), "wallpaper" (Pfad), "wt|<datei>", "komorebi|<datei>" (von der Oberfläche)
+
+fn originals_path() -> PathBuf {
+    data_dir().join("originals.json")
+}
+fn load_originals() -> BTreeMap<String, serde_json::Value> {
+    std::fs::read_to_string(originals_path()).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default()
+}
+fn save_originals(m: &BTreeMap<String, serde_json::Value>) -> Result<(), String> {
+    let p = originals_path();
+    std::fs::create_dir_all(p.parent().unwrap()).map_err(|e| e.to_string())?;
+    std::fs::write(&p, serde_json::to_string_pretty(m).unwrap()).map_err(|e| e.to_string())
+}
+/// Ältester gesicherter Registry-Wert (aus Sicherungen vor dieser Version) – besser als der jetzige, der schon von Theme Studio sein kann.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn earliest_backup_reg(key: &str, name: &str) -> Option<Option<RegValue>> {
+    let mut ids: Vec<String> = std::fs::read_dir(data_dir().join("backups")).ok()?.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    ids.sort();
+    ids.iter().find_map(|id| load_manifest(id).ok()?.registry.into_iter().find(|r| r.key == key && r.name == name).map(|r| r.old))
+}
+
+#[tauri::command]
+pub fn orig_get() -> BTreeMap<String, serde_json::Value> {
+    load_originals()
+}
+/// Original merken, falls noch keins da ist → true, wenn gemerkt.
+#[tauri::command]
+pub fn orig_set_once(key: String, value: serde_json::Value) -> Result<bool, String> {
+    let mut m = load_originals();
+    if m.contains_key(&key) {
+        return Ok(false);
+    }
+    m.insert(key, value);
+    save_originals(&m)?;
+    Ok(true)
+}
+
 // ── Registry, Wallpaper, Farbwechsel (nur Windows) ───────────────────────────
 
 #[derive(Deserialize)]
@@ -351,6 +390,10 @@ fn reg_write(key: &str, name: &str, value: &RegValue) -> Result<(), String> {
         RegValue::Dword(d) => k.set_value(name, d),
         RegValue::String(s) => k.set_value(name, s),
         RegValue::Binary(b) => k.set_raw_value(name, &RV { vtype: REG_BINARY, bytes: b.clone() }),
+        RegValue::Delete => {
+            reg_delete(key, name);
+            Ok(())
+        }
     }
     .map_err(|e| format!("{key}\\{name}: {e}"))
 }
@@ -375,6 +418,16 @@ pub fn reg_apply(session: String, values: Vec<RegSet>) -> Result<(), String> {
             }
         }
         save_manifest(&session, &m)?;
+        // Original (Stand vor dem allerersten Theme-Studio-Eingriff) dauerhaft merken – für „Auf Standard zurücksetzen“
+        let mut orig = load_originals();
+        for v in &values {
+            let k = format!("reg|{}|{}", v.key, v.name);
+            if !orig.contains_key(&k) {
+                let old = earliest_backup_reg(&v.key, &v.name).unwrap_or_else(|| reg_read(&v.key, &v.name));
+                orig.insert(k, serde_json::to_value(old).unwrap_or_default());
+            }
+        }
+        save_originals(&orig)?;
         for v in &values {
             reg_write(&v.key, &v.name, &v.value)?;
         }
@@ -395,7 +448,15 @@ pub fn set_wallpaper(path: String) -> Result<(), String> {
     }
     #[cfg(windows)]
     {
-        use windows_sys::Win32::UI::WindowsAndMessaging::{SystemParametersInfoW, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE};
+        use windows_sys::Win32::UI::WindowsAndMessaging::{SystemParametersInfoW, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE};
+        let mut orig = load_originals();
+        if !orig.contains_key("wallpaper") {
+            let mut buf = [0u16; 1024];
+            let ok = unsafe { SystemParametersInfoW(SPI_GETDESKWALLPAPER, buf.len() as u32, buf.as_mut_ptr().cast(), 0) };
+            let cur = if ok != 0 { String::from_utf16_lossy(&buf[..buf.iter().position(|&c| c == 0).unwrap_or(0)]) } else { String::new() };
+            orig.insert("wallpaper".into(), serde_json::Value::String(cur));
+            save_originals(&orig)?;
+        }
         let mut wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
         let ok = unsafe { SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, wide.as_mut_ptr().cast(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE) };
         if ok == 0 {

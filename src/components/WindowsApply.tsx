@@ -10,6 +10,7 @@ import type { StoredImage } from "../lib/store";
 import { useDialog } from "../lib/useDialog";
 import { applyAll, conflicts, detect, diagnose, LABELS, type Detection, type TargetId, type TargetResult } from "../lib/windows/apply";
 import { tauriBridge, type Bridge } from "../lib/windows/bridge";
+import { resetAll } from "../lib/windows/reset";
 
 interface Props {
   name: string;
@@ -71,6 +72,25 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
       setLogFile(r.logFile);
     } catch (e) {
       setNote(t("Anwenden abgebrochen: {e}", { e: errText(e) }));
+    }
+    setState("done");
+  };
+
+  const reset = async () => {
+    if (!bridge) return;
+    const { ask } = await import("@tauri-apps/plugin-dialog");
+    if (!(await ask(t("Alles, was Theme Studio geändert hat, wird zurückgesetzt: Akzentfarbe, Hell/Dunkel und Wallpaper wie vor Theme Studio (sonst Windows-Standard), Terminal- und VS-Code-Farben, Prompt in den Shells, komorebi-Farben. Deine eigenen Einstellungen bleiben. Fortfahren?"),
+      { title: t("Auf Standard zurücksetzen"), kind: "warning" }))) return;
+    setState("running");
+    setNote("");
+    try {
+      const r = await resetAll(bridge);
+      setResults(r.results);
+      setSession(r.session);
+      setLogFile(r.logFile);
+      setNote(t("Zurückgesetzt. „Rückgängig“ holt den Stand von eben zurück."));
+    } catch (e) {
+      setNote(t("Zurücksetzen fehlgeschlagen: {e}", { e: errText(e) }));
     }
     setState("done");
   };
@@ -156,6 +176,8 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
         </div>
         <div className="wh-foot">
           <button type="button" className="ghost" onClick={copyDiag} disabled={!bridge}>{t("Diagnose kopieren")}</button>
+          <button type="button" className="ghost danger" onClick={reset} disabled={!bridge || state === "running" || state === "detecting"}
+            title={t("Alle Änderungen von Theme Studio entfernen – Windows wie vorher")}>{t("Auf Standard zurücksetzen")}</button>
           {state === "done" && session && <button type="button" className="ghost" onClick={undo}>{t("Rückgängig")}</button>}
           <span className="grow" />
           <button type="button" className="ghost" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>

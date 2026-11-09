@@ -51,9 +51,9 @@ export const LABELS: Record<TargetId, string> = {
   komorebi: "komorebi (Rahmen + Leiste)",
 };
 
-const SCHEME_NAME = "Theme Studio";
-const MARK_BEGIN_JSON = "  // >>> theme-studio (wird beim Anwenden ersetzt)";
-const MARK_END_JSON = "  // <<< theme-studio";
+export const SCHEME_NAME = "Theme Studio";
+export const MARK_BEGIN_JSON = "  // >>> theme-studio (wird beim Anwenden ersetzt)";
+export const MARK_END_JSON = "  // <<< theme-studio";
 const MARK_BEGIN_PS = "# >>> theme-studio (wird beim Anwenden ersetzt)";
 const MARK_END_PS = "# <<< theme-studio";
 
@@ -222,6 +222,14 @@ export function mergeTerminal(text: string | null, c: Palette, o: ApplyOptions, 
   return JSON.stringify(data, null, 4) + "\n";
 }
 
+/** Terminal-Original merken (nur wenn es noch nicht von Theme Studio ist). */
+async function rememberTerminal(b: Bridge, f: string, text: string | null) {
+  const data = parseJsonc(text ?? "{}") as Record<string, any>;
+  const d = (Array.isArray(data.profiles) ? {} : data.profiles?.defaults) ?? {};
+  if (d.colorScheme === SCHEME_NAME || data.theme === SCHEME_NAME) return;
+  await b.origSetOnce(`wt|${f}`, { colorScheme: d.colorScheme ?? null, font: d.font ?? null, theme: data.theme ?? null }).catch(() => false);
+}
+
 async function applyTerminal(b: Bridge, session: string, o: ApplyOptions, det: Detection, c: Palette): Promise<TargetResult> {
   const details: string[] = [];
   const list = o.withFonts ? await b.fonts().catch(() => [] as string[]) : [];
@@ -233,6 +241,7 @@ async function applyTerminal(b: Bridge, session: string, o: ApplyOptions, det: D
   for (const f of det.where) {
     const text = await b.read(f);
     try {
+      await rememberTerminal(b, f, text);
       const out = mergeTerminal(text, c, o, fontOk);
       await b.write(session, f, out);
       details.push(`geschrieben: ${f}`);
@@ -344,6 +353,8 @@ async function applyKomorebi(b: Bridge, session: string, o: ApplyOptions, det: D
     const text = await b.read(f);
     try {
       const data = parseJsonc(text ?? "{}");
+      const prev = data.theme as { palette?: string } | undefined;
+      if (prev?.palette !== "Custom") await b.origSetOnce(`komorebi|${f}`, { theme: prev ?? null }).catch(() => false);
       data.theme = f.endsWith("komorebi.json") ? th.main : th.bar;
       await b.write(session, f, JSON.stringify(data, null, 2) + "\n");
       details.push(`geschrieben: ${f}`);
@@ -367,11 +378,11 @@ async function applyKomorebi(b: Bridge, session: string, o: ApplyOptions, det: D
 
 // ── Ablauf ──────────────────────────────────────────────────────────────────
 
-function res(id: TargetId, status: Status, message: string, details: string[]): TargetResult {
+export function res(id: TargetId, status: Status, message: string, details: string[]): TargetResult {
   return { id, label: LABELS[id], status, message, details };
 }
 
-const stamp = () => new Date().toISOString().replace("T", " ").slice(0, 19);
+export const stamp = () => new Date().toISOString().replace("T", " ").slice(0, 19);
 
 /** Alles anwenden: erkennen → je Ziel anwenden (Fehler eines Ziels stoppen die anderen nicht) → Protokoll. */
 export async function applyAll(b: Bridge, o: ApplyOptions): Promise<{ results: TargetResult[]; session: string; logFile: string }> {

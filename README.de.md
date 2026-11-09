@@ -37,7 +37,7 @@ Beim ersten Start fragt die App, für welches System sie Themes anwenden soll (a
 - **Anwenden unter Windows** – ohne Skripte, ohne Python: Wallpaper, Akzentfarbe und Hell/Dunkel, Windows-Terminal-
   Schema + Schrift, VS-Code-Farben + Schrift, PowerShell-Prompt, komorebi-Rahmen und -Leiste. Zeigt vorher, was
   gefunden wurde und was fehlt (mit Installationshinweis), protokolliert jeden Schritt, **Rückgängig** stellt den
-  vorherigen Stand her, **Diagnose kopieren** für Hilfe (Benutzername ersetzt)
+  vorherigen Stand her, **Auf Standard zurücksetzen** entfernt alles, was Theme Studio je geändert hat (zurück wie vor Theme Studio, sonst Windows-Standard), **Diagnose kopieren** für Hilfe (Benutzername ersetzt)
 - **Anwenden unter Linux** über deine eigenen Skripte `wallthemes` + `fontgen`
 - **Vorschauen** von VS Code, Firefox, Obsidian und Discord; 16 ANSI-Farben passend zum Theme
 - **Exporte**: Theme-Datei (wieder einlesbar), VS-Code-Erweiterung (`.vsix`), Windows-Terminal-Schema,
