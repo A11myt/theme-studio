@@ -630,3 +630,22 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--accent); }
 .hero .match:hover { background: #000b; }
 .cmd-note { font-size: .85rem; }
 html { scrollbar-gutter: stable; }
+
+/* Farbe: Palette unter dem Bild, Wallpaper-Suche oben auf dem Bild */
+.hero .match { top: 12px; bottom: auto; }
+.palette-peek { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.palette-peek li { border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; box-shadow: inset 0 0 0 1px #0000000f; }
+.palette-peek span { font-size: .75rem; font-weight: 600; }
+.palette-peek code { font-size: .68rem; opacity: .8; overflow: hidden; text-overflow: ellipsis; }
+
+/* Terminal-Vorschau als Fenster, Farbleiste mit Luft */
+.terminal-preview .term-box { position: relative; padding-top: 34px; box-shadow: 0 1px 2px #0003, inset 0 0 0 1px #ffffff0d; }
+.terminal-preview .term-box::before { content: ""; position: absolute; top: 13px; left: 14px; width: 9px; height: 9px; border-radius: 50%;
+  background: currentColor; opacity: .25; box-shadow: 15px 0 currentColor, 30px 0 currentColor; }
+.ansi { gap: 4px; margin-top: 12px; }
+.ansi-row { gap: 4px; }
+.ansi-row i { height: 16px; border-radius: 5px; }
+
+/* Sammlung: Kartenaktionen ruhig */
+.tc-actions { display: flex; align-items: center; gap: 6px; }
+.theme-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); padding: 10px; }

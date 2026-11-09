@@ -84,7 +84,7 @@ export function Library(p: Props) {
 
       <section>
         <h2>{t("Vorlagen")}</h2>
-        <p className="empty">{t("Eigene Vorlagen hochladen (z. B. alacritty.toml mit {{colors.primary.default.hex}}) – sie werden mit dem Theme ausgefüllt.")}</p>
+        <p className="empty">{t("Eigene Konfig-Dateien mit Platzhaltern – werden mit dem Theme ausgefüllt.")}</p>
         <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>{t("Vorlage hinzufügen")}</button>
         <input ref={tplInput} type="file" multiple hidden
           onChange={(e) => { p.onAddTemplates([...(e.target.files ?? [])]); e.target.value = ""; }} />

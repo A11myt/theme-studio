@@ -5,6 +5,7 @@ import { Hct } from "@material/material-color-utilities";
 import { DEFAULT_FONTS } from "../lib/fonts";
 import type { StoredTheme } from "../lib/store";
 import { Desktop, type Os } from "./Desktop";
+import { MoreMenu } from "./MoreMenu";
 import { t } from "../lib/i18n";
 
 interface Props {
@@ -95,13 +96,20 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
                       {applying === th.id ? t("Wird angewendet …") : t("Anwenden")}</button>
                   : null}
                 <button type="button" className={onApply ? "ghost" : "primary"} onClick={() => onOpen(th)}>{t("Öffnen")}</button>
-                <button type="button" className="ghost" onClick={() => setRenaming(th.id)}>{t("Umbenennen")}</button>
-                <button type="button" className="ghost" onClick={() => onDuplicate(th)}>{t("Duplizieren")}</button>
-                <button type="button" className="ghost" onClick={() => onShare(th)} title={t("Link mit diesem Theme kopieren")}>{t("Link")}</button>
                 <span className="grow" />
-                {confirmDel === th.id
-                  ? <button type="button" className="ghost danger" onClick={() => { onDelete(th.id); setConfirmDel(undefined); }}>{t("Löschen?")}</button>
-                  : <button type="button" className="ghost" onClick={() => setConfirmDel(th.id)} aria-label={t("{name} löschen", { name: th.name })} title={t("Löschen")}>✕</button>}
+                {confirmDel === th.id ? (
+                  <>
+                    <button type="button" className="ghost" onClick={() => setConfirmDel(undefined)}>{t("Abbrechen")}</button>
+                    <button type="button" className="ghost danger" autoFocus onClick={() => { onDelete(th.id); setConfirmDel(undefined); }}>{t("Löschen")}</button>
+                  </>
+                ) : (
+                  <MoreMenu label={t("Weitere Aktionen für {name}", { name: th.name })} items={[
+                    { label: t("Umbenennen"), onSelect: () => setRenaming(th.id) },
+                    { label: t("Duplizieren"), onSelect: () => onDuplicate(th) },
+                    { label: t("Link kopieren"), onSelect: () => onShare(th) },
+                    { label: t("Löschen …"), onSelect: () => setConfirmDel(th.id) },
+                  ]} />
+                )}
               </div>
             </li>
           );

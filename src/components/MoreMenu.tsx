@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 
 export interface MenuItem { label: string; hint?: string; onSelect: () => void }
 
-export function MoreMenu({ items }: { items: MenuItem[] }) {
+export function MoreMenu({ items, label }: { items: MenuItem[]; label?: string }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -30,7 +30,7 @@ export function MoreMenu({ items }: { items: MenuItem[] }) {
   return (
     <div className="more" ref={wrap}>
       <button ref={btn} type="button" className="ghost icon" aria-haspopup="menu" aria-expanded={open}
-        aria-label={t("Weitere Aktionen")} title={t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}>⋯</button>
+        aria-label={label ?? t("Weitere Aktionen")} title={label ?? t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}>⋯</button>
       {open && (
         <div className="more-menu" role="menu" onKeyDown={onKey}>
           {items.map((it, i) => (

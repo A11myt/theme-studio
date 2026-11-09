@@ -8,7 +8,7 @@ import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function FarbePane({ s }: { s: Studio }) {
-  const { settings, os, setOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages } = s;
+  const { settings, os, setOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages, pal } = s;
   const fileInput = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
@@ -34,6 +34,14 @@ export function FarbePane({ s }: { s: Studio }) {
               title={t("wallhaven nach Bildern in der Ausgangsfarbe durchsuchen")}>
               <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} />{" "}{t("Passende Wallpaper suchen")}
             </button>}
+            {bg && (
+              <ul className="palette-peek" aria-label={t("Palette dieser Variante")}>
+                {([[t("Primär"), pal.primary, pal.on_primary], [t("Sekundär"), pal.secondary, pal.on_secondary], [t("Tertiär"), pal.tertiary, pal.on_tertiary],
+                   [t("Fläche"), pal.surface, pal.on_surface], [t("Karte"), pal.surface_container_high, pal.on_surface], [t("Fehler"), pal.error, pal.on_error]] as [string, string, string][]).map(([n, bgc, fg]) => (
+                  <li key={n} style={{ background: bgc, color: fg }}><span>{n}</span><code>{bgc}</code></li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="controls">
             <h2>{t("Ausgangsfarbe")}</h2>
