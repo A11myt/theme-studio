@@ -3,8 +3,8 @@
 // Fremde Einstellungen bleiben unangetastet; das Zurücksetzen selbst ist wieder eine Sicherung (→ Rückgängig).
 import { t as tr } from "../i18n";
 import { detectShells, writeShells } from "../shells";
-import { conflicts, detect, MARK_BEGIN_JSON, MARK_END_JSON, res, SCHEME_NAME, stamp, vscodeCandidates, type TargetResult } from "./apply";
-import type { Bridge, RegSet, RegValue, WinEnv } from "./bridge";
+import { conflicts, detect, komorebiDir, MARK_BEGIN_JSON, MARK_END_JSON, res, SCHEME_NAME, stamp, vscodeCandidates, type TargetResult } from "./apply";
+import { join, type Bridge, type RegSet, type RegValue, type WinEnv } from "./bridge";
 import { parseJsonc } from "./jsonc";
 
 /** Windows-10/11-Standard (Blau #0078D7, hell) – falls kein Original gemerkt ist. */
@@ -29,6 +29,8 @@ export const REG_TARGETS: [string, string][] = [
   [DWM, "AccentColor"], [DWM, "ColorizationColor"], [DWM, "ColorizationAfterglow"], [DWM, "ColorPrevalence"],
   [THEMES, "AppsUseLightTheme"], [THEMES, "SystemUsesLightTheme"], ["Control Panel\\Desktop", "AutoColorization"],
 ];
+const ADV = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
+const WIN_KEYS = "1234567QCFDOW";   // wie install.ps1 in dotfiles-windows
 const DEFAULT_WALLPAPER = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg";
 
 /** Registry-Werte fürs Zurücksetzen: gemerktes Original (auch „gab es nicht“ → löschen), sonst Windows-Standard. */
@@ -148,6 +150,55 @@ export async function resetAll(b: Bridge): Promise<{ results: TargetResult[]; se
     if (st.code === 0) await b.runTool("komorebic", ["reload-configuration"]).catch(() => undefined);
     return res("komorebi", "ok", details.length ? tr("Rahmen und Leiste wieder mit Standard-Farben") : tr("nichts zu tun"), details);
   });
+
+  if (e.os === "windows") {
+    // Autostart: Farb-Automatik (wintheme --watch) aus, whkd aus dem komorebi-Autostart nehmen und beenden
+    await run("autostart", async (details) => {
+      const startup = join(e.appdata, "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+      if (await b.remove(session, join(startup, "wintheme-watch.lnk"))) details.push("Autostart entfernt: wintheme-watch.lnk");
+      const watchers = await b.stopProcess("pythonw.exe").catch(() => 0);
+      if (watchers) details.push(`Farb-Automatik beendet (${watchers})`);
+      const komoLnk = join(startup, "komorebi.lnk");
+      if (e.tools.komorebic && (await b.exists(komoLnk))) {
+        await b.backupFile(session, komoLnk);
+        const bar = await b.exists(join(komorebiDir(e), "komorebi.bar.json"));
+        const r = await b.runTool("komorebic", bar ? ["enable-autostart", "--bar"] : ["enable-autostart"]);
+        details.push(`komorebi-Autostart ohne whkd: ${r.code === 0 ? "ok" : `Code ${r.code} ${r.output.slice(0, 120)}`}`);
+      }
+      const whkd = await b.stopProcess("whkd.exe").catch(() => 0);
+      if (whkd) details.push(`whkd beendet (${whkd})`);
+      return res("autostart", "ok", details.length ? tr("Farb-Automatik und Tasten-Dienst whkd aus – komorebi startet weiter, nur ohne whkd") : tr("nichts zu tun"), details);
+    });
+
+    // Win-Tastenkombinationen: wie vor install.ps1 (Sicherung), sonst unsere Buchstaben aus DisabledHotkeys und Andocken wieder an
+    await run("hotkeys", async (details) => {
+      const keysBak = join(e.appdata, "wintheme", "winkeys-backup.json");
+      const bak = await b.read(keysBak).then((t) => (t ? (JSON.parse(t.replace(/^\uFEFF/, "")) as { DisabledHotkeys?: string | null; WindowArrangementActive?: string | null }) : null)).catch(() => null);
+      const cur = await b.regGet(ADV, "DisabledHotkeys").catch(() => null);
+      const curText = cur?.kind === "String" ? cur.value : "";
+      let values: RegSet[];
+      if (bak) {
+        values = [
+          { key: ADV, name: "DisabledHotkeys", value: bak.DisabledHotkeys ? { kind: "String", value: bak.DisabledHotkeys } : { kind: "Delete" } },
+          { key: "Control Panel\\Desktop", name: "WindowArrangementActive", value: bak.WindowArrangementActive ? { kind: "String", value: bak.WindowArrangementActive } : { kind: "String", value: "1" } },
+        ];
+        details.push(`aus Sicherung: ${keysBak}`);
+      } else if (WIN_KEYS.split("").every((k) => curText.includes(k))) {
+        const rest = curText.split("").filter((k) => !WIN_KEYS.includes(k)).join("");
+        values = [
+          { key: ADV, name: "DisabledHotkeys", value: rest ? { kind: "String", value: rest } : { kind: "Delete" } },
+          { key: "Control Panel\\Desktop", name: "WindowArrangementActive", value: { kind: "String", value: "1" } },
+        ];
+        details.push("keine Sicherung – Win+1–7, Q, C, F, D, O, W wieder an Windows, Andocken an");
+      } else {
+        return res("hotkeys", "skipped", tr("nicht verändert (kein whkd-Setup gefunden)"), details);
+      }
+      const same = values[0].value.kind === "Delete" ? !cur : cur?.kind === "String" && values[0].value.kind === "String" && cur.value === values[0].value.value;
+      await b.regApply(session, values);
+      if (!same) { await b.restartExplorer().catch((err) => details.push(`Explorer-Neustart: ${String(err)}`)); details.push("Explorer neu gestartet"); }
+      return res("hotkeys", "ok", tr("Win-Tasten wieder bei Windows (Win+1–7, Q, C, F, D, O, W, Andocken)"), details);
+    });
+  }
 
   const warn = await conflicts(b, e).catch(() => [] as string[]);
   const log = ["", `=== ${stamp()} Auf Standard zurückgesetzt – Sicherung ${session}`, ...warn.map((w) => `[WARNUNG] ${w}`)];

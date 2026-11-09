@@ -426,7 +426,6 @@ export const EN: Record<string, string> = {
   "zsh-Prompt über": "zsh prompt via",
   "Akzent, Hell/Dunkel und Wallpaper wie vor Theme Studio": "Accent, light/dark and wallpaper as before Theme Studio",
   "Alle Änderungen von Theme Studio entfernen – Windows wie vorher": "Remove all changes made by Theme Studio – Windows as before",
-  "Alles, was Theme Studio geändert hat, wird zurückgesetzt: Akzentfarbe, Hell/Dunkel und Wallpaper wie vor Theme Studio (sonst Windows-Standard), Terminal- und VS-Code-Farben, Prompt in den Shells, komorebi-Farben. Deine eigenen Einstellungen bleiben. Fortfahren?": "Everything Theme Studio changed will be reset: accent color, light/dark and wallpaper as before Theme Studio (otherwise Windows default), Terminal and VS Code colors, the prompt in your shells, komorebi colors. Your own settings stay. Continue?",
   "Auf Standard zurücksetzen": "Reset to default",
   "Farben und Schrift aus Theme Studio entfernt": "Theme Studio colors and font removed",
   "Rahmen und Leiste wieder mit Standard-Farben": "Borders and bar back to default colors",
@@ -436,4 +435,10 @@ export const EN: Record<string, string> = {
   "Zurückgesetzt. „Rückgängig“ holt den Stand von eben zurück.": "Reset done. “Undo” brings back the state from just now.",
   "Zurücksetzen fehlgeschlagen: {e}": "Reset failed: {e}",
   "nichts zu tun": "nothing to do",
+  "Alles wird zurückgesetzt: Akzentfarbe, Hell/Dunkel und Wallpaper wie vorher (sonst Windows-Standard), Terminal- und VS-Code-Farben, Prompt in den Shells, komorebi-Farben. Außerdem: Farb-Automatik und Tasten-Dienst whkd aus dem Autostart, Win-Tastenkombinationen zurück an Windows (Explorer startet dabei kurz neu). Deine eigenen Einstellungen bleiben. Fortfahren?": "Everything will be reset: accent color, light/dark and wallpaper as before (otherwise Windows default), Terminal and VS Code colors, the prompt in your shells, komorebi colors. Also: the color automation and the whkd hotkey daemon are removed from autostart, and the Win key shortcuts go back to Windows (Explorer restarts briefly). Your own settings stay. Continue?",
+  "Autostart (Farb-Automatik, whkd)": "Autostart (color automation, whkd)",
+  "Win-Tastenkombinationen": "Win key shortcuts",
+  "Farb-Automatik und Tasten-Dienst whkd aus – komorebi startet weiter, nur ohne whkd": "Color automation and whkd hotkey daemon off – komorebi still starts, just without whkd",
+  "nicht verändert (kein whkd-Setup gefunden)": "unchanged (no whkd setup found)",
+  "Win-Tasten wieder bei Windows (Win+1–7, Q, C, F, D, O, W, Andocken)": "Win keys back to Windows (Win+1–7, Q, C, F, D, O, W, snapping)",
 };

@@ -13,7 +13,7 @@ import OMP_DEFAULT from "./ohmyposh-default.json?raw";
 import { chosenShells, detectShells, initLines, promptDir, writeShells } from "../shells";
 import { t as tr } from "../i18n";
 
-export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi";
+export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi" | "autostart" | "hotkeys";
 export type Status = "ok" | "warn" | "skipped" | "error";
 
 export interface Detection {
@@ -49,6 +49,8 @@ export const LABELS: Record<TargetId, string> = {
   vscode: "VS Code",
   ohmyposh: "oh-my-posh (PowerShell-Prompt)",
   komorebi: "komorebi (Rahmen + Leiste)",
+  autostart: "Autostart (Farb-Automatik, whkd)",
+  hotkeys: "Win-Tastenkombinationen",
 };
 
 export const SCHEME_NAME = "Theme Studio";

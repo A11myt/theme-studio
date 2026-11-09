@@ -79,7 +79,7 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
   const reset = async () => {
     if (!bridge) return;
     const { ask } = await import("@tauri-apps/plugin-dialog");
-    if (!(await ask(t("Alles, was Theme Studio geändert hat, wird zurückgesetzt: Akzentfarbe, Hell/Dunkel und Wallpaper wie vor Theme Studio (sonst Windows-Standard), Terminal- und VS-Code-Farben, Prompt in den Shells, komorebi-Farben. Deine eigenen Einstellungen bleiben. Fortfahren?"),
+    if (!(await ask(t("Alles wird zurückgesetzt: Akzentfarbe, Hell/Dunkel und Wallpaper wie vorher (sonst Windows-Standard), Terminal- und VS-Code-Farben, Prompt in den Shells, komorebi-Farben. Außerdem: Farb-Automatik und Tasten-Dienst whkd aus dem Autostart, Win-Tastenkombinationen zurück an Windows (Explorer startet dabei kurz neu). Deine eigenen Einstellungen bleiben. Fortfahren?"),
       { title: t("Auf Standard zurücksetzen"), kind: "warning" }))) return;
     setState("running");
     setNote("");

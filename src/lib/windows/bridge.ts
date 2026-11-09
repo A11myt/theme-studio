@@ -37,6 +37,11 @@ export interface Bridge {
   /** Originale (Stand vor dem ersten Theme-Studio-Eingriff), dauerhaft gemerkt. */
   origGet(): Promise<Record<string, unknown>>;
   origSetOnce(key: string, value: unknown): Promise<boolean>;
+  regGet(key: string, name: string): Promise<RegValue | null>;
+  backupFile(session: string, path: string): Promise<void>;
+  remove(session: string, path: string): Promise<boolean>;
+  stopProcess(name: "whkd.exe" | "pythonw.exe"): Promise<number>;
+  restartExplorer(): Promise<void>;
 }
 
 /** Echte Verbindung (Tauri-App). */
@@ -60,6 +65,11 @@ export async function tauriBridge(): Promise<Bridge> {
     restore: (id) => invoke("backup_restore", { session: id }),
     origGet: () => invoke("orig_get"),
     origSetOnce: (key, value) => invoke("orig_set_once", { key, value }),
+    regGet: (key, name) => invoke("reg_get", { key, name }),
+    backupFile: (session, path) => invoke("fs_backup", { session, path }),
+    remove: (session, path) => invoke("fs_remove", { session, path }),
+    stopProcess: (name) => invoke("stop_process", { name }),
+    restartExplorer: () => invoke("restart_explorer"),
   };
 }
 

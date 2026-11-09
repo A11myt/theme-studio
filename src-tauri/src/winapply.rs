@@ -282,23 +282,118 @@ pub fn backup_begin(label: String) -> Result<String, String> {
     Ok(id)
 }
 
-/// Textdatei schreiben; vorher (einmal je Sicherung) das Original sichern. `bom` für PowerShell-Profile.
-#[tauri::command]
-pub fn fs_write(session: String, path: String, text: String, bom: bool) -> Result<(), String> {
-    let mut m = load_manifest(&session)?;
+/// Datei (einmal je Sicherung) in die Sicherung kopieren – Rückgängig stellt sie wieder her (oder löscht sie, wenn es sie nicht gab).
+fn backup_file(session: &str, path: &str) -> Result<(), String> {
+    let mut m = load_manifest(session)?;
     if !m.files.iter().any(|f| f.path == path) {
-        let target = Path::new(&path);
+        let target = Path::new(path);
         let backup = if target.is_file() {
             let name = format!("{}-{}", m.files.len(), target.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default());
-            let dest = manifest_path(&session)?.with_file_name(&name);
+            let dest = manifest_path(session)?.with_file_name(&name);
             std::fs::copy(target, &dest).map_err(|e| format!("Sicherung von {path}: {e}"))?;
             Some(dest.to_string_lossy().into_owned())
         } else {
             None
         };
-        m.files.push(FileBackup { path: path.clone(), backup });
-        save_manifest(&session, &m)?;
+        m.files.push(FileBackup { path: path.to_string(), backup });
+        save_manifest(session, &m)?;
     }
+    Ok(())
+}
+
+/// Nur sichern (z. B. bevor ein anderes Programm die Datei ändert).
+#[tauri::command]
+pub fn fs_backup(session: String, path: String) -> Result<(), String> {
+    backup_file(&session, &path)
+}
+
+/// Datei entfernen – vorher gesichert, Rückgängig legt sie wieder hin.
+#[tauri::command]
+pub fn fs_remove(session: String, path: String) -> Result<bool, String> {
+    if !Path::new(&path).is_file() {
+        return Ok(false);
+    }
+    backup_file(&session, &path)?;
+    std::fs::remove_file(&path).map_err(|e| format!("{path}: {e}"))?;
+    Ok(true)
+}
+
+/// Erlaubte Prozesse beenden: whkd, und pythonw nur aus %LOCALAPPDATA%\wintheme (der Farb-Wächter). → Anzahl.
+#[tauri::command]
+pub fn stop_process(name: String) -> Result<u32, String> {
+    let prefix = match name.as_str() {
+        "whkd.exe" => None,
+        "pythonw.exe" => Some(env_path("LOCALAPPDATA").unwrap_or_default().join("wintheme").to_string_lossy().to_lowercase()),
+        _ => return Err(format!("nicht erlaubt: {name}")),
+    };
+    procs(&name, prefix.as_deref(), true)
+}
+
+/// Prozesse mit diesem Namen zählen bzw. beenden (optional nur aus einem Ordner).
+#[cfg(windows)]
+fn procs(name: &str, prefix: Option<&str>, kill: bool) -> Result<u32, String> {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS};
+    use windows_sys::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, TerminateProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE};
+    let mut n = 0;
+    unsafe {
+        let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snap == INVALID_HANDLE_VALUE {
+            return Err("Prozessliste nicht lesbar".into());
+        }
+        let mut e: PROCESSENTRY32W = std::mem::zeroed();
+        e.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut ok = Process32FirstW(snap, &mut e);
+        while ok != 0 {
+            let len = e.szExeFile.iter().position(|&c| c == 0).unwrap_or(e.szExeFile.len());
+            if String::from_utf16_lossy(&e.szExeFile[..len]).eq_ignore_ascii_case(name) {
+                let h = OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_LIMITED_INFORMATION, 0, e.th32ProcessID);
+                if !h.is_null() {
+                    let mut buf = [0u16; 1024];
+                    let mut sz = buf.len() as u32;
+                    let path = if QueryFullProcessImageNameW(h, 0, buf.as_mut_ptr(), &mut sz) != 0 { String::from_utf16_lossy(&buf[..sz as usize]).to_lowercase() } else { String::new() };
+                    if prefix.is_none_or(|p| path.starts_with(p)) && (!kill || TerminateProcess(h, 0) != 0) {
+                        n += 1;
+                    }
+                    CloseHandle(h);
+                }
+            }
+            ok = Process32NextW(snap, &mut e);
+        }
+        CloseHandle(snap);
+    }
+    Ok(n)
+}
+#[cfg(not(windows))]
+fn procs(_name: &str, _prefix: Option<&str>, _kill: bool) -> Result<u32, String> {
+    Ok(0)
+}
+
+/// Explorer neu starten (nötig, damit geänderte Win-Tastenkombinationen greifen).
+/// Windows startet die Shell nach dem Beenden meist selbst neu – nur wenn nicht, starten wir sie.
+#[tauri::command]
+pub fn restart_explorer() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        procs("explorer.exe", None, true)?;
+        for _ in 0..10 {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            if procs("explorer.exe", None, false)? > 0 {
+                return Ok(());
+            }
+        }
+        let windir = env_path("WINDIR").unwrap_or_else(|| PathBuf::from(r"C:\Windows"));
+        std::process::Command::new(windir.join("explorer.exe")).spawn().map_err(|e| format!("Explorer: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    Err("nur unter Windows".into())
+}
+
+/// Textdatei schreiben; vorher (einmal je Sicherung) das Original sichern. `bom` für PowerShell-Profile.
+#[tauri::command]
+pub fn fs_write(session: String, path: String, text: String, bom: bool) -> Result<(), String> {
+    backup_file(&session, &path)?;
     // Symlink (z. B. .zshrc aus einem dotfiles-Repo per stow)? Dann das Ziel beschreiben, den Link nicht ersetzen
     let real = match std::fs::symlink_metadata(&path) {
         Ok(m) if m.file_type().is_symlink() => std::fs::canonicalize(&path).map_err(|e| format!("{path}: Link zeigt ins Leere ({e})"))?,
@@ -342,6 +437,18 @@ fn earliest_backup_reg(key: &str, name: &str) -> Option<Option<RegValue>> {
     let mut ids: Vec<String> = std::fs::read_dir(data_dir().join("backups")).ok()?.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
     ids.sort();
     ids.iter().find_map(|id| load_manifest(id).ok()?.registry.into_iter().find(|r| r.key == key && r.name == name).map(|r| r.old))
+}
+
+/// Einen Registry-Wert (HKCU) lesen.
+#[tauri::command]
+pub fn reg_get(key: String, name: String) -> Option<RegValue> {
+    #[cfg(windows)]
+    return reg_read(&key, &name);
+    #[cfg(not(windows))]
+    {
+        let _ = (key, name);
+        None
+    }
 }
 
 #[tauri::command]
@@ -538,7 +645,8 @@ pub struct RunResult {
 #[tauri::command]
 pub fn run_tool(tool: String, args: Vec<String>) -> Result<RunResult, String> {
     let allowed = match tool.as_str() {
-        "komorebic" => matches!(args.iter().map(String::as_str).collect::<Vec<_>>().as_slice(), ["state"] | ["reload-configuration"] | ["--version"]),
+        "komorebic" => matches!(args.iter().map(String::as_str).collect::<Vec<_>>().as_slice(),
+            ["state"] | ["reload-configuration"] | ["--version"] | ["enable-autostart"] | ["enable-autostart", "--bar"]),
         "oh-my-posh" => args == ["--version"],
         _ => false,
     };

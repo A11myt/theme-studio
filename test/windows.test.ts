@@ -22,7 +22,7 @@ const PS7 = `${ENV.documents}\\PowerShell\\Microsoft.PowerShell_profile.ps1`;
 const KOMO = `${HOME}\\komorebi.json`;
 const KBAR = `${HOME}\\komorebi.bar.json`;
 
-function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>>; orig?: Record<string, unknown> } = {}) {
+function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>>; orig?: Record<string, unknown>; regInit?: Record<string, RegSet["value"]> } = {}) {
   const fs = new Map(Object.entries(files));
   const dirs = new Set<string>();
   for (const f of fs.keys()) dirs.add(f.slice(0, f.lastIndexOf("\\")));
@@ -47,6 +47,11 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
     psPolicy: async () => opts.policy ?? {},
     origGet: async () => Object.fromEntries(orig),
     origSetOnce: async (k, v) => { if (orig.has(k)) return false; orig.set(k, v); return true; },
+    regGet: async (key, name) => { const v = [...reg].reverse().find((r) => r.key === key && r.name === name)?.value ?? opts.regInit?.[name] ?? null; return v && v.kind !== "Delete" ? v : null; },
+    backupFile: async (_s, p) => { calls.push(`backup ${p}`); },
+    remove: async (_s, p) => { const had = fs.delete(p); if (had) calls.push(`remove ${p}`); return had; },
+    stopProcess: async (n) => { calls.push(`stop ${n}`); return n === "whkd.exe" ? 1 : 0; },
+    restartExplorer: async () => { calls.push("explorer"); },
     fonts: async () => opts.fonts ?? ["Iosevka Nerd Font Mono", "Hack Nerd Font Mono"],
     log: async (lines) => { log.push(...lines); return "apply.log"; },
     logTail: async () => log.slice(-20).join("\n"),
@@ -269,7 +274,7 @@ describe("Auf Standard zurücksetzen", () => {
     await applyAll(w.b, { ...OPTS, settings: { ...OPTS.settings, scheme: "vibrant" } });   // zweimal: Original bleibt das erste
     expect(w.orig.get(`wt|${WT}`)).toEqual({ colorScheme: "Campbell", font: { face: "Consolas" }, theme: null });
     const { results, session } = await resetAll(w.b);
-    expect(results.every((r) => r.status === "ok")).toBe(true);
+    expect(results.every((r) => r.status === "ok" || r.status === "skipped")).toBe(true);
     expect(session).toBeTruthy();
     const wt = parseJsonc(w.fs.get(WT)!) as any;
     expect(wt.schemes.map((s: any) => s.name)).toEqual(["Campbell"]);
@@ -304,5 +309,36 @@ describe("Auf Standard zurücksetzen", () => {
     expect(wt.schemes.map((s: any) => s.name)).toEqual(["Campbell"]);
     expect((parseJsonc(w.fs.get(KOMO)!) as any).theme).toBeUndefined();
     expect(w.reg.slice(-10).find((r) => r.name === "AppsUseLightTheme")!.value).toEqual({ kind: "Dword", value: 1 });
+  });
+});
+
+describe("Zurücksetzen: Autostart, whkd, Win-Tasten (install.ps1)", () => {
+  const STARTUP = `${ENV.appdata}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup`;
+  const BAK = `${ENV.appdata}\\wintheme\\winkeys-backup.json`;
+  it("Farb-Automatik raus, komorebi-Autostart ohne whkd, Tasten aus Sicherung, Explorer neu", async () => {
+    const { resetAll } = await import("../src/lib/windows/reset");
+    const w = fakeWindows({ [`${STARTUP}\\wintheme-watch.lnk`]: "lnk", [`${STARTUP}\\komorebi.lnk`]: "lnk", [KOMO]: "{}", [KBAR]: "{}",
+      [BAK]: '{ "DisabledHotkeys": null, "WindowArrangementActive": "1" }' }, { regInit: { DisabledHotkeys: { kind: "String", value: "1234567QCFDOW" } } });
+    const { results } = await resetAll(w.b);
+    const by = Object.fromEntries(results.map((r) => [r.id, r]));
+    expect(by.autostart.status).toBe("ok");
+    expect(w.fs.has(`${STARTUP}\\wintheme-watch.lnk`)).toBe(false);
+    expect(w.calls).toContain("komorebic enable-autostart --bar");
+    expect(w.calls).toContain("stop whkd.exe");
+    expect(by.hotkeys.status).toBe("ok");
+    expect(w.reg.find((r) => r.name === "DisabledHotkeys")!.value).toEqual({ kind: "Delete" });
+    expect(w.reg.find((r) => r.name === "WindowArrangementActive")!.value).toEqual({ kind: "String", value: "1" });
+    expect(w.calls).toContain("explorer");
+  });
+  it("ohne Sicherung: nur unsere Buchstaben raus; ohne whkd-Setup: Tasten unangetastet", async () => {
+    const { resetAll } = await import("../src/lib/windows/reset");
+    const a = fakeWindows({}, { regInit: { DisabledHotkeys: { kind: "String", value: "X1234567QCFDOW" } } });
+    await resetAll(a.b);
+    expect(a.reg.find((r) => r.name === "DisabledHotkeys")!.value).toEqual({ kind: "String", value: "X" });
+    const b = fakeWindows({}, { regInit: { DisabledHotkeys: { kind: "String", value: "X" } } });
+    const { results } = await resetAll(b.b);
+    expect(results.find((r) => r.id === "hotkeys")!.status).toBe("skipped");
+    expect(b.reg.some((r) => r.name === "DisabledHotkeys")).toBe(false);
+    expect(b.calls).not.toContain("explorer");
   });
 });
