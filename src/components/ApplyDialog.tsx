@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDialog } from "../lib/useDialog";
 import { effectiveSource, SCHEMES, type ThemeSettings } from "../lib/color";
-import { FONT_PRESETS, type Fonts } from "../lib/fonts";
+import { FONT_PRESETS, hasFonts, type Fonts } from "../lib/fonts";
 import { ompTemplate, p10kOverlay, type PromptOptions } from "../lib/prompt";
 import { applyTheme, errText, imageToDisk } from "../lib/platform";
 import { applyLinuxShells } from "../lib/linuxShells";
@@ -36,6 +36,8 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
   const overrides = Object.fromEntries(Object.entries(settings.overrides ?? {}).filter(([, v]) => v)) as Record<string, string>;
   const preset = Object.entries(FONT_PRESETS).find(([, p]) => JSON.stringify(p) === JSON.stringify(fonts))?.[0];
 
+  // fontgen braucht alle drei Rollen – leere mit den gewählten auffüllen
+  const filled: Fonts = { ...fonts, ui: fonts.ui || fonts.mono || fonts.accent, mono: fonts.mono || fonts.ui || fonts.accent, accent: fonts.accent || fonts.ui || fonts.mono };
   const run = async () => {
     setState("running");
     setLog("");
@@ -43,7 +45,7 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
       const path = image && wallpaperDir ? await imageToDisk(image.blob, image.name, wallpaperDir) : undefined;
       const out = await applyTheme({
         image: path, source: src, scheme: settings.scheme, mode: settings.mode, contrast: settings.contrast,
-        overrides, fonts: withFonts ? fonts : undefined, fontProfile: withFonts ? preset : undefined,
+        overrides, fonts: withFonts && hasFonts(fonts) ? filled : undefined, fontProfile: withFonts && hasFonts(fonts) ? preset : undefined,
         prompt: { enabled: prompt.enabled, p10k: p10kOverlay(prompt), omp: ompTemplate(prompt) },
       });
       // Prompt in bash/fish (oh-my-posh) bzw. zsh einbinden – Fehler hier stoppen das übrige Anwenden nicht

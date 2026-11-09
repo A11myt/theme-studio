@@ -54,10 +54,12 @@ export function vscodeSettings(name: string, f: Fonts) {
   const px = Math.round((f.monoSize * 4) / 3);
   return {
     "workbench.colorTheme": name,
-    "editor.fontFamily": `'${f.mono}', monospace`,
-    "editor.fontSize": px,
-    "terminal.integrated.fontFamily": `'${f.mono}'`,
-    "terminal.integrated.fontSize": px,
+    ...(f.mono ? {
+      "editor.fontFamily": `'${f.mono}', monospace`,
+      "editor.fontSize": px,
+      "terminal.integrated.fontFamily": `'${f.mono}'`,
+      "terminal.integrated.fontSize": px,
+    } : {}),
   };
 }
 

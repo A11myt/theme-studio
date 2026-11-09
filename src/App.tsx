@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import { ApplyDialog } from "./components/ApplyDialog";
 import { WindowsApply } from "./components/WindowsApply";
 import { Library } from "./components/Library";
-import { NerdFonts } from "./components/NerdFonts";
 import { PromptWizard } from "./components/PromptWizard";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsDialog } from "./components/SettingsDialog";
@@ -24,7 +23,7 @@ import { useBackground } from "./lib/background";
 export function App() {
   const lang = useLang();          // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
+  const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings,  prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
 
   useBackground({ themes, lang, windows: system === "windows", fonts, prompt, flash });
 
@@ -92,8 +91,6 @@ export function App() {
       {showApply && (system === "windows"
         ? <WindowsApply name={themeName} settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />
         : <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />)}
-      {showNerd && <NerdFonts onClose={() => setShowNerd(false)}
-        onInstalled={(fam) => { setFontsKey((k) => k + 1); flash(t("{fam} Nerd Font installiert", { fam }), 3000); }} />}
       {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys}
         system={systemChoice ?? "auto"} detected={detected} onSystem={setSystemChoice} onClose={() => setShowSettings(false)}
         onSave={(s) => { setApp(s); storeSettings(s); flash(t("Einstellungen gespeichert")); }} />}

@@ -13,7 +13,10 @@ export const FONT_PRESETS: Record<string, Fonts> = {
   hack: { ui: "Hack Nerd Font Propo", mono: "Hack Nerd Font Mono", accent: "NDOT 47 (inspired by NOTHING)", uiSize: 10, monoSize: 9 },
   jetbrains: { ui: "JetBrainsMono Nerd Font Propo", mono: "JetBrainsMono Nerd Font Mono", accent: "NDOT 47 (inspired by NOTHING)", uiSize: 10, monoSize: 9 },
 };
-export const DEFAULT_FONTS = FONT_PRESETS.iosevka;
+// Standard: nichts festlegen – die Programme behalten ihre Schrift (wird erst gesetzt, wenn du eine wählst)
+export const DEFAULT_FONTS: Fonts = { ui: "", mono: "", accent: "", uiSize: 10, monoSize: 9 };
+/** Wurde überhaupt eine Schrift gewählt? */
+export const hasFonts = (f?: Fonts) => !!f && !!(f.ui || f.mono || f.accent);
 
 /** Platzhalter wie fontgen: {{fonts.ui}}, {{fonts.mono}}, {{fonts.accent}}, {{fonts.ui_size}}, {{fonts.mono_size}}, {{fonts.ui_px}}, {{fonts.mono_px}} */
 export function fontValues(f: Fonts): Record<string, string> {
@@ -25,4 +28,4 @@ export function fontValues(f: Fonts): Record<string, string> {
 }
 
 /** CSS-Schriftliste mit Rückfall. */
-export const cssFont = (name: string, fallback: string) => `"${name}", ${fallback}`;
+export const cssFont = (name: string, fallback: string) => (name ? `"${name}", ${fallback}` : fallback);

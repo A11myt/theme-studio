@@ -428,7 +428,8 @@ export function res(id: TargetId, status: Status, message: string, details: stri
 export const stamp = () => new Date().toISOString().replace("T", " ").slice(0, 19);
 
 /** Alles anwenden: erkennen → je Ziel anwenden (Fehler eines Ziels stoppen die anderen nicht) → Protokoll. */
-export async function applyAll(b: Bridge, o: ApplyOptions): Promise<{ results: TargetResult[]; session: string; logFile: string }> {
+export async function applyAll(b: Bridge, opts: ApplyOptions): Promise<{ results: TargetResult[]; session: string; logFile: string }> {
+  const o: ApplyOptions = { ...opts, withFonts: opts.withFonts && !!opts.fonts.mono };   // keine Schrift gewählt → Schriften bleiben
   const e = await b.env();
   const dets = await detect(b, e);
   const c = palette(o.settings);

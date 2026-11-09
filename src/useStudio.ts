@@ -41,7 +41,6 @@ export function useStudio() {
   const [fonts, setFonts] = useState<Fonts>(DEFAULT_FONTS);
   const [app, setApp] = useState<AppSettings>({ wallpaperDir: "", exportDir: "", askOnSave: false });
   const [showSettings, setShowSettings] = useState(false);
-  const [showNerd, setShowNerd] = useState(false);
   const [fontsKey, setFontsKey] = useState(0);
   const [bothModes, setBothModes] = useState(false);
   // Prompt (Assistent): gilt für den Rechner, nicht pro Theme – gemerkt im Browser-Speicher der App
@@ -379,8 +378,6 @@ export function useStudio() {
     setApp,
     showSettings,
     setShowSettings,
-    showNerd,
-    setShowNerd,
     fontsKey,
     setFontsKey,
     bothModes,

@@ -1,59 +1,55 @@
-// Schrift-Bereich: fontgen-Profile als Vorlage, drei Schriften mit Vorschau, Größen, Liste installierter Schriften.
-// Gespeichert wird nur der Name (Verweis) – keine Schriftdateien im Projekt.
+// Schriften: Oberfläche, Mono (Terminal & Code), Akzent – je eine Auswahl mit Probezeile, dazu die Größen.
+// Leer = Standard: die Programme behalten ihre Schrift. Nerd Fonts werden beim Auswählen installiert (App).
 import { useEffect, useState } from "react";
-import { cssFont, FONT_PRESETS, type Fonts } from "../lib/fonts";
-import { isTauri, systemFonts } from "../lib/platform";
+import { cssFont, type Fonts } from "../lib/fonts";
+import { systemFonts } from "../lib/platform";
+import { FontPicker } from "./FontPicker";
 import { t } from "../lib/i18n";
 
 interface Props {
   fonts: Fonts;
   onChange: (f: Fonts) => void;
-  onNerdFonts: () => void;
-  refreshKey: number;     // nach Installation neu laden
+  refreshKey: number;
+  onInstalled: () => void;
 }
 
-export const ROLES: { key: "ui" | "mono" | "accent"; label: string; hint: string; sample: string; fallback: string }[] = [
-  { key: "ui", label: "Oberfläche", hint: "Leiste, Menüs, Fenster", sample: "Einstellungen · Bluetooth · 10:24", fallback: "sans-serif" },
+type Role = "ui" | "mono" | "accent";
+export const ROLES: { key: Role; label: string; hint: string; sample: string; fallback: string }[] = [
   { key: "mono", label: "Mono", hint: "Terminal & Code", sample: "fn main() { println!(\"0O 1lI\"); }", fallback: "monospace" },
+  { key: "ui", label: "Oberfläche", hint: "Leiste, Menüs, Fenster", sample: "Einstellungen · Bluetooth · 10:24", fallback: "sans-serif" },
   { key: "accent", label: "Akzent", hint: "Überschriften, Uhr", sample: "10:24 — Montag", fallback: "sans-serif" },
 ];
 
-export function FontPanel({ fonts, onChange, onNerdFonts, refreshKey }: Props) {
+export function FontPanel({ fonts, onChange, refreshKey, onInstalled }: Props) {
   const [installed, setInstalled] = useState<string[]>([]);
+  const [picking, setPicking] = useState<Role>();
   useEffect(() => { void systemFonts().then(setInstalled); }, [refreshKey]);
-
-  const known = new Set(installed);
   const set = (patch: Partial<Fonts>) => onChange({ ...fonts, ...patch });
-  const preset = Object.entries(FONT_PRESETS).find(([, p]) => JSON.stringify(p) === JSON.stringify(fonts))?.[0];
+  const known = new Set(installed);
 
   return (
     <section className="card fonts">
       <div className="fonts-head">
-        <h2>{t("Schrift")}</h2>
-        <div className="seg" role="group" aria-label={t("fontgen-Profil")}>
-          {Object.keys(FONT_PRESETS).map((k) => (
-            <button key={k} type="button" aria-pressed={preset === k} onClick={() => onChange(FONT_PRESETS[k])}>{k}</button>
-          ))}
-        </div>
-        <span className="grow" />
-        {isTauri
-          ? <button type="button" className="ghost" onClick={onNerdFonts}>{t("Nerd Fonts von GitHub …")}</button>
-          : <small className="empty">{t("Nerd Fonts installieren: in der App")}</small>}
+        <h2>{t("Schrift")}<small>{t("leer = bleibt, wie es ist")}</small></h2>
       </div>
-      <datalist id="installed-fonts">{installed.map((f) => <option key={f} value={f} />)}</datalist>
       <div className="font-rows">
-        {ROLES.map((r) => (
-          <div key={r.key} className="font-row">
-            <label>
-              <span>{t(r.label)}<small>{t(r.hint)}</small></span>
-              <input className="name" list="installed-fonts" value={fonts[r.key]}
-                onChange={(e) => set({ [r.key]: e.target.value } as Partial<Fonts>)} />
-            </label>
-            <p className="sample" style={{ fontFamily: cssFont(fonts[r.key], r.fallback) }}>{t(r.sample)}</p>
-            {installed.length > 0 && !known.has(fonts[r.key]) &&
-              <small className="warn">{t("nicht installiert – Vorschau mit Ersatzschrift")}</small>}
-          </div>
-        ))}
+        {ROLES.map((r) => {
+          const v = fonts[r.key];
+          return (
+            <div key={r.key} className="font-row">
+              <div className="font-label"><b>{t(r.label)}</b><small>{t(r.hint)}</small></div>
+              <div className="font-pick">
+                <button type="button" className="font-btn" onClick={() => setPicking(r.key)} aria-label={t("{role}-Schrift wählen", { role: t(r.label) })}>
+                  <span style={v ? { fontFamily: cssFont(v, r.fallback) } : undefined}>{v || t("Standardschrift")}</span>
+                  <small>{t("ändern")}</small>
+                </button>
+                {v && <button type="button" className="ghost icon" onClick={() => set({ [r.key]: "" } as Partial<Fonts>)} aria-label={t("Zurück auf Standard")} title={t("Zurück auf Standard")}>✕</button>}
+              </div>
+              <p className="sample" style={{ fontFamily: cssFont(v, r.fallback) }}>{t(r.sample)}</p>
+              {v && installed.length > 0 && !known.has(v) && <small className="warn">{t("nicht installiert – Vorschau mit Ersatzschrift")}</small>}
+            </div>
+          );
+        })}
         <div className="font-sizes">
           <label>{t("Oberfläche")}{" "}<input type="number" min={6} max={24} step={0.5} value={fonts.uiSize}
             onChange={(e) => set({ uiSize: Number(e.target.value) })} /> pt</label>
@@ -61,6 +57,9 @@ export function FontPanel({ fonts, onChange, onNerdFonts, refreshKey }: Props) {
             onChange={(e) => set({ monoSize: Number(e.target.value) })} /> pt</label>
         </div>
       </div>
+      {picking && <FontPicker role={picking} title={t("{role}-Schrift wählen", { role: t(ROLES.find((r) => r.key === picking)!.label) })}
+        installed={installed} onPick={(f) => set({ [picking]: f } as Partial<Fonts>)}
+        onInstalled={() => { void systemFonts().then(setInstalled); onInstalled(); }} onClose={() => setPicking(undefined)} />}
     </section>
   );
 }

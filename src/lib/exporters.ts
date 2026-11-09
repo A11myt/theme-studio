@@ -3,7 +3,7 @@
 import { ansi } from "./ansi";
 import { t as tr } from "./i18n";
 import { effectiveSource, palette, SCHEMES, type Palette, type ThemeSettings } from "./color";
-import { DEFAULT_FONTS, fontValues, type Fonts } from "./fonts";
+import { DEFAULT_FONTS, hasFonts, fontValues, type Fonts } from "./fonts";
 
 export type ExportGroup = "windows" | "linux" | "allgemein";
 
@@ -101,7 +101,7 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
   const c = palette(t);
   const s = slug(name);
   const css = Object.entries(c).map(([k, v]) => `  --${k.replace(/_/g, "-")}: ${v};`).join("\n");
-  return [
+  const all: ExportFile[] = [
     {
       id: "theme", group: "allgemein", label: "Theme-Datei", hint: "alles in einer Datei – zum Aufheben und Teilen",
       filename: `${s}.theme.json`,
@@ -144,6 +144,8 @@ export function exportsFor(name: string, t: ThemeSettings, imageName?: string, f
       filename: `${s}.css`, text: `/* ${name} – ${t.scheme}, ${t.mode} */\n:root {\n${css}\n}\n`,
     },
   ];
+  // ohne gewählte Schrift keine Schrift-Dateien (Standard = Programme behalten ihre Schrift)
+  return all.filter((x) => (x.id === "terminal-font" ? !!f.mono : x.id === "fontgen" ? hasFonts(f) : true));
 }
 
 function base16Yaml(name: string, t: ThemeSettings, c: Palette): string {

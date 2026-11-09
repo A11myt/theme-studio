@@ -20,10 +20,10 @@ export function upsertMarked(text: string | null, begin: string, end: string, bo
 
 /** Obsidian-Snippet: Grundflächen, Text, Akzent, Links, Markierungen, Code, Schriften. */
 export function obsidianCss(c: Palette, fonts?: Fonts): string {
-  const f = fonts ? `
+  const f = (fonts?.ui ? `
   --font-interface-override: ${cssFont(fonts.ui, "sans-serif")};
-  --font-text-override: ${cssFont(fonts.ui, "sans-serif")};
-  --font-monospace-override: ${cssFont(fonts.mono, "monospace")};` : "";
+  --font-text-override: ${cssFont(fonts.ui, "sans-serif")};` : "") + (fonts?.mono ? `
+  --font-monospace-override: ${cssFont(fonts.mono, "monospace")};` : "");
   return `/* Theme Studio – Farben aus deinem Theme. Ausschalten: Einstellungen → Darstellung → CSS-Snippets */
 .theme-dark, .theme-light {
   --background-primary: ${c.surface};
