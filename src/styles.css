@@ -765,3 +765,4 @@ body { overflow: hidden; }
 .fp-default { border: 1px dashed var(--line-strong); margin-top: 4px; }
 .font-row .font-pick, .font-row .sample { justify-self: stretch; width: 100%; }
 .schrift-pane .font-row { grid-template-columns: 120px minmax(0, 1fr); }
+.files-card > .files { align-content: start; }

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { SCHEMES } from "../lib/color";
 import { renderTemplate } from "../lib/exporters";
+import { ompTemplate, p10kOverlay } from "../lib/prompt";
 import { isTauri } from "../lib/platform";
 import { vscodeTheme } from "../lib/vscode";
 import type { Studio } from "../useStudio";
@@ -8,16 +9,13 @@ import { t } from "../lib/i18n";
 
 export function ExportPane({ s }: { s: Studio }) {
   const tplInput = useRef<HTMLInputElement>(null);
-  const { templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, shareTheme } = s;
+  const { prompt, templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings } = s;
   return (
     <div className="pane export-pane">
         <section className="card summary">
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
-          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""} · {fonts.mono}</small></span>
+          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={() => setTab("farbe")}>{t("Farbe ändern")}</button>
-          <button type="button" className="ghost" onClick={() => setTab("schrift")}>{t("Schrift ändern")}</button>
-          <button type="button" className="ghost" onClick={() => shareTheme(themeName, settings, fonts)} title={t("Link mit diesem Theme kopieren")}>{t("Link teilen")}</button>
           {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>{t("Anwenden")}</button>}
         </section>
         <div className="export-grid">
@@ -44,7 +42,7 @@ export function ExportPane({ s }: { s: Studio }) {
               <button type="button" className="primary" onClick={saveVsix}>{t("Speichern")}</button>
             </li>
             <li>
-              <span><b>settings.json</b><small>{t("Theme auswählen + Schrift „{font}“ für Editor und Terminal", { font: fonts.mono })}</small></span>
+              <span><b>settings.json</b><small>{fonts.mono ? t("Theme auswählen + Schrift „{font}“ für Editor und Terminal", { font: fonts.mono }) : t("Theme auswählen (Schrift bleibt)")}</small></span>
               <button type="button" className="ghost" onClick={() => copy(vsSettings)}>{t("Kopieren")}</button>
             </li>
             <li>
@@ -90,6 +88,20 @@ export function ExportPane({ s }: { s: Studio }) {
                 <button type="button" className="ghost" onClick={() => saveFile(f.filename, f.text)}>{t("Speichern")}</button>
               </li>
             ))}
+            {prompt.enabled && (group === "alle" || group === "linux") && (
+              <li>
+                <span><b>{t("Prompt: powerlevel10k")}</b><small>{t("nach ~/.config/theme-studio/p10k.zsh – deine .zshrc lädt sie nach ~/.p10k.zsh")}</small></span>
+                <button type="button" className="ghost" onClick={() => copy(p10kOverlay(prompt))}>{t("Kopieren")}</button>
+                <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>{t("Speichern")}</button>
+              </li>
+            )}
+            {prompt.enabled && group !== "linux" && (
+              <li>
+                <span><b>{t("Prompt: oh-my-posh")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als Platzhalter")}</small></span>
+                <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>{t("Kopieren")}</button>
+                <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>{t("Speichern")}</button>
+              </li>
+            )}
             {(group === "alle" || group === "linux") && templates.map((tpl) => {
               const out = () => renderTemplate(tpl.text, settings, image?.name, fonts);
               return (

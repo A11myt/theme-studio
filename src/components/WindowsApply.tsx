@@ -155,8 +155,8 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
                 <span>{image ? t("Wallpaper setzen: {name}", { name: image.name }) : t("Wallpaper bleibt (kein Bild gewählt)")}</span></label>
               <label className="check"><input type="checkbox" checked={titlebars} onChange={(e) => setTitlebars(e.target.checked)} />
                 <span>{t("Akzentfarbe auch in Titelleisten")}</span></label>
-              <label className="check"><input type="checkbox" checked={withFonts} onChange={(e) => setWithFonts(e.target.checked)} />
-                <span>{t("Schrift anwenden: {font} (Terminal, VS Code)", { font: fonts.mono })}</span></label>
+              <label className="check"><input type="checkbox" checked={withFonts && !!fonts.mono} disabled={!fonts.mono} onChange={(e) => setWithFonts(e.target.checked)} />
+                <span>{fonts.mono ? t("Schrift anwenden: {font} (Terminal, VS Code)", { font: fonts.mono }) : t("Keine Schrift gewählt – Schriften bleiben, wie sie sind")}</span></label>
             </>
           )}
 

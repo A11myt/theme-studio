@@ -1,11 +1,11 @@
 import { TerminalPreview } from "../components/TerminalPreview";
 import { ShellPicker } from "../components/ShellPicker";
-import { ompTemplate, p10kOverlay, RIGHT_LABELS } from "../lib/prompt";
+import { RIGHT_LABELS } from "../lib/prompt";
 import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function TerminalPane({ s }: { s: Studio }) {
-  const { settings, fonts, prompt, setPrompt, setShowWizard, setTab, pal, copy, saveFile } = s;
+  const { settings, fonts, prompt, setPrompt, setShowWizard, setTab, pal } = s;
   return (
     <div className="pane">
           <section className="card terminal-pane">
@@ -16,7 +16,8 @@ export function TerminalPane({ s }: { s: Studio }) {
                 <span>{t("Eigenen Prompt aus dem Studio verwenden")}</span>
               </label>
               <span className="grow" />
-              <button type="button" className="primary" onClick={() => setShowWizard(true)}>{t("Prompt-Assistent …")}</button>
+              <button type="button" className="ghost" onClick={() => setShowWizard(true)}>{t("Prompt-Assistent …")}</button>
+              <button type="button" className="primary" onClick={() => setTab("vorschau")}>{t("Weiter: Vorschau →")}</button>
             </div>
             <p className="empty">{prompt.enabled
               ? t("Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh, bei zsh wahlweise powerlevel10k). Farben kommen aus dem Theme.")
@@ -34,24 +35,6 @@ export function TerminalPane({ s }: { s: Studio }) {
               </div>
             )}
           </section>
-          {prompt.enabled && (
-            <section className="card export">
-              <h2>{t("Prompt-Dateien")}</h2>
-              <ul className="files">
-                <li>
-                  <span><b>{t("powerlevel10k (Linux)")}</b><small>{t("nach ~/.config/theme-studio/p10k.zsh – deine .zshrc lädt sie nach ~/.p10k.zsh")}</small></span>
-                  <button type="button" className="ghost" onClick={() => copy(p10kOverlay(prompt))}>{t("Kopieren")}</button>
-                  <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>{t("Speichern")}</button>
-                </li>
-                <li>
-                  <span><b>{t("oh-my-posh-Vorlage")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als Platzhalter")}</small></span>
-                  <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>{t("Kopieren")}</button>
-                  <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>{t("Speichern")}</button>
-                </li>
-              </ul>
-            </section>
-          )}
-          <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("vorschau")}>{t("Weiter: Vorschau →")}</button></div>
     </div>
   );
 }
