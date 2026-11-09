@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { SCHEMES } from "../lib/color";
 import { renderTemplate } from "../lib/exporters";
 import { isTauri } from "../lib/platform";
@@ -6,7 +7,8 @@ import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function ExportPane({ s }: { s: Studio }) {
-  const { templates, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, shareTheme } = s;
+  const tplInput = useRef<HTMLInputElement>(null);
+  const { templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, setTab, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, shareTheme } = s;
   return (
     <div className="pane">
         <section className="card summary">
@@ -31,6 +33,8 @@ export function ExportPane({ s }: { s: Studio }) {
             <button type="button" className="ghost" onClick={() => copy(cmds.linux)}>{t("Kopieren")}</button>
           </div>
 
+        </section>
+        <section className="card export">
           <h2>VS Code</h2>
           <ul className="files">
             <li>
@@ -48,6 +52,8 @@ export function ExportPane({ s }: { s: Studio }) {
             </li>
           </ul>
 
+        </section>
+        <section className="card export">
           <div className="detail-head">
             <h2>{t("Dateien")}{" "}{isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
             <span className="grow" />
@@ -78,6 +84,21 @@ export function ExportPane({ s }: { s: Studio }) {
               );
             })}
           </ul>
+        </section>
+
+        <section className="card export">
+          <div className="detail-head">
+            <h2>{t("Eigene Vorlagen")}<small>{t("deine Konfig-Dateien mit Platzhaltern wie {{colors.primary.default.hex}} – werden mit dem Theme ausgefüllt")}</small></h2>
+            <span className="grow" />
+            <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>{t("Vorlage hinzufügen …")}</button>
+            <input ref={tplInput} type="file" multiple hidden onChange={(e) => { void addTemplates([...(e.target.files ?? [])]); e.target.value = ""; }} />
+          </div>
+          {templates.length === 0
+            ? <p className="empty">{t("Noch keine. Zum Beispiel eine alacritty.toml oder kitty.conf mit Platzhaltern – die fertigen Dateien erscheinen dann oben in der Liste.")}</p>
+            : <ul className="files">{templates.map((tpl) => (
+                <li key={tpl.id}><span><b><code>{tpl.name}</code></b><small>→ {tpl.output}</small></span>
+                  <button type="button" className="ghost" onClick={() => deleteTemplate(tpl.id)} aria-label={t("{name} entfernen", { name: tpl.name })}>{t("Entfernen")}</button></li>
+              ))}</ul>}
         </section>
     </div>
   );

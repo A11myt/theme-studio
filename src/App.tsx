@@ -24,7 +24,7 @@ import { useBackground } from "./lib/background";
 export function App() {
   const lang = useLang();          // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, templates, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
+  const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
 
   useBackground({ themes, lang, windows: system === "windows", fonts, prompt, flash });
 
@@ -48,7 +48,8 @@ export function App() {
             <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
               className={id === "sammlung" ? "tab-lib" : ""}
               tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>
-              {id !== "sammlung" && <span className="step" aria-hidden="true">{i + 1}</span>}{t(label)}</button>
+              {id !== "sammlung" && <span className="step" aria-hidden="true">{i + 1}</span>}{t(label)}
+              {id === "sammlung" && themes.length > 0 && <span className="count" aria-label={t("{n} gespeichert", { n: themes.length })}>{themes.length}</span>}</button>
           ))}
         </nav>
         <span className="grow" />
@@ -70,10 +71,9 @@ export function App() {
         {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title={t("Auf diesem Rechner anwenden ({sys})", { sys: system === "windows" ? "Windows" : "Linux" })}>{t("Anwenden")}</button>}
       </header>
 
-      {libOpen && <Library images={images} urls={urls} themes={themes} templates={templates} selectedImage={imageId} busy={busy}
+      {libOpen && <Library images={images} urls={urls} selectedImage={imageId} busy={busy}
         onAddImages={addImages} onWallhaven={() => setWallhaven({})} onSelectImage={(id) => { const i = images.find((x) => x.id === id); if (i) selectImage(i); }}
-        onDeleteImage={deleteImage} onOpenTheme={openTheme} onDeleteTheme={deleteTheme}
-        onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />}
+        onDeleteImage={deleteImage} onAddTemplates={addTemplates} />}
 
       <main className="main" id="bereich" tabIndex={-1} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <UpdateBanner />

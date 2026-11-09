@@ -649,3 +649,11 @@ html { scrollbar-gutter: stable; }
 /* Sammlung: Kartenaktionen ruhig */
 .tc-actions { display: flex; align-items: center; gap: 6px; }
 .theme-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); padding: 10px; }
+
+/* Zähler (Seitenleiste, Sammlung-Reiter) */
+.count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; margin-left: 6px;
+  font-size: .68rem; font-weight: 600; background: var(--panel-3); color: var(--muted); letter-spacing: 0; vertical-align: middle; }
+.app { grid-template-columns: 248px 1fr; }
+.app.lib-closed { grid-template-columns: 1fr; }
+.card.export > h2:first-child, .card.export > .detail-head:first-child h2 { margin-top: 0; }
+.card.export .detail-head { margin-bottom: 4px; }

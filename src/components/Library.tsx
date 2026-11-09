@@ -1,29 +1,23 @@
-// Seitenleiste: Bilder hochladen/auswählen, gespeicherte Themes, eigene Vorlagen.
+// Seitenleiste: nur das Ausgangsmaterial – Bilder hochladen, auswählen, wallhaven. (Themes → Sammlung, Vorlagen → Export)
 import { useRef, useState, type DragEvent } from "react";
 import { hasWallhaven } from "../lib/platform";
-import type { StoredImage, StoredTemplate, StoredTheme } from "../lib/store";
-import { t, t as tr } from "../lib/i18n";
+import type { StoredImage } from "../lib/store";
+import { t } from "../lib/i18n";
 
 interface Props {
   images: StoredImage[];
   urls: Record<string, string>;
-  themes: StoredTheme[];
-  templates: StoredTemplate[];
   selectedImage?: string;
   busy: boolean;
   onAddImages: (files: File[]) => void;
   onWallhaven: () => void;
   onSelectImage: (id: string) => void;
   onDeleteImage: (id: string) => void;
-  onOpenTheme: (t: StoredTheme) => void;
-  onDeleteTheme: (id: string) => void;
   onAddTemplates: (files: File[]) => void;
-  onDeleteTemplate: (id: string) => void;
 }
 
 export function Library(p: Props) {
   const imgInput = useRef<HTMLInputElement>(null);
-  const tplInput = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
 
   const drop = (e: DragEvent) => {
@@ -39,12 +33,12 @@ export function Library(p: Props) {
   return (
     <aside className="library">
       <section>
-        <h2>{t("Bilder")}</h2>
+        <h2>{t("Bilder")}{p.images.length > 0 && <span className="count">{p.images.length}</span>}</h2>
         <button type="button" className={`drop ${drag ? "over" : ""}`}
           onClick={() => imgInput.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)} onDrop={drop}>
-          {p.busy ? t("Farben werden berechnet …") : <>{t("Bilder hierher ziehen")}<br /><small>{t("oder klicken · Vorlagen auch")}</small></>}
+          {p.busy ? t("Farben werden berechnet …") : <>{t("Bilder hierher ziehen")}<br /><small>{t("oder klicken")}</small></>}
         </button>
         {hasWallhaven
           ? <button type="button" className="ghost wide" onClick={p.onWallhaven}>{t("Auf wallhaven suchen")}</button>
@@ -66,37 +60,6 @@ export function Library(p: Props) {
         </ul>
       </section>
 
-      <section>
-        <h2>{t("Gespeicherte Themes")}</h2>
-        {p.themes.length === 0 && <p className="empty">{t("Noch keine. Oben rechts „Speichern“.")}</p>}
-        <ul className="list">
-          {p.themes.map((t) => (
-            <li key={t.id}>
-              <button type="button" className="row" onClick={() => p.onOpenTheme(t)}>
-                <i className="sw" style={{ background: t.settings.source }} />
-                <span>{t.name}<small>{t.settings.scheme} · {t.settings.mode === "dark" ? tr("dunkel") : tr("hell")}</small></span>
-              </button>
-              <button type="button" className="x" aria-label={tr("{name} löschen", { name: t.name })} onClick={() => p.onDeleteTheme(t.id)}>✕</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2>{t("Vorlagen")}</h2>
-        <p className="empty">{t("Eigene Konfig-Dateien mit Platzhaltern – werden mit dem Theme ausgefüllt.")}</p>
-        <button type="button" className="ghost" onClick={() => tplInput.current?.click()}>{t("Vorlage hinzufügen")}</button>
-        <input ref={tplInput} type="file" multiple hidden
-          onChange={(e) => { p.onAddTemplates([...(e.target.files ?? [])]); e.target.value = ""; }} />
-        <ul className="list">
-          {p.templates.map((t) => (
-            <li key={t.id}>
-              <span className="row static"><code>{t.name}</code></span>
-              <button type="button" className="x" aria-label={`${t.name} entfernen`} onClick={() => p.onDeleteTemplate(t.id)}>✕</button>
-            </li>
-          ))}
-        </ul>
-      </section>
     </aside>
   );
 }
