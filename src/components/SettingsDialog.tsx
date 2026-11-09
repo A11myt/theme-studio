@@ -89,7 +89,7 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detect
           </div>
           <label className="check">
             <input type="checkbox" checked={singleKeys} onChange={(e) => onSingleKeys(e.target.checked)} />
-            <span>{t("Einzeltasten-Kürzel (1–9 Variante, D/H dunkel/hell, Z Zufall)")}<small>{" "}{t("– ausschalten, falls du Spracheingabe oder einen Screenreader nutzt")}</small></span>
+            <span>{t("Einzeltasten-Kürzel (1–9 Variante, D/H dunkel/hell, Z Zufall, B Seitenleiste)")}<small>{" "}{t("– ausschalten, falls du Spracheingabe oder einen Screenreader nutzt")}</small></span>
           </label>
         </div>
         <div className="wh-foot">

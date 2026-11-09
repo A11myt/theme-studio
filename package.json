@@ -1,7 +1,7 @@
 {
   "name": "theme-studio",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Build color themes from your own wallpapers and apply them to Windows and Linux",
   "scripts": {

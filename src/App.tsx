@@ -6,6 +6,7 @@ import { NerdFonts } from "./components/NerdFonts";
 import { PromptWizard } from "./components/PromptWizard";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsDialog } from "./components/SettingsDialog";
+import { MoreMenu } from "./components/MoreMenu";
 import { FirstRun } from "./components/FirstRun";
 import { Wallhaven } from "./components/Wallhaven";
 import { isTauri } from "./lib/platform";
@@ -22,10 +23,10 @@ import { t, useLang } from "./lib/i18n";
 export function App() {
   useLang();                       // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, templates, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, systemChoice, setSystemChoice, detected, system } = s;
+  const { images, themes, templates, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
 
   return (
-    <div className="app" style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
+    <div className={`app ${libOpen ? "" : "lib-closed"}`} style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
       <a className="skip" href="#bereich">{t("Zum Inhalt springen")}</a>
       <header className="top">
         <h1>Theme Studio</h1>
@@ -51,8 +52,12 @@ export function App() {
         <div className="tools">
           <button type="button" className="ghost" onClick={undo} disabled={!past.current.length} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}>↶</button>
           <button type="button" className="ghost" onClick={redo} disabled={!future.current.length} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}>↷</button>
-          <button type="button" className="ghost" onClick={surprise} title={t("Zufälliges Theme (Z)")}>{t("Zufall")}</button>
-          <button type="button" className="ghost" onClick={() => importInput.current?.click()} title={t(".theme.json einlesen")}>Import</button>
+          <MoreMenu items={[
+            { label: t("Zufälliges Theme"), hint: "Z", onSelect: surprise },
+            { label: t("Theme-Datei importieren …"), onSelect: () => importInput.current?.click() },
+            { label: t("Link zu diesem Theme kopieren"), onSelect: () => void shareTheme(themeName, settings, fonts) },
+            { label: libOpen ? t("Seitenleiste ausblenden") : t("Seitenleiste einblenden"), hint: "B", onSelect: () => setLibOpen(!libOpen) },
+          ]} />
           <input ref={importInput} type="file" accept=".json,application/json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importTheme(f); e.target.value = ""; }} />
         </div>
@@ -62,10 +67,10 @@ export function App() {
         {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title={t("Auf diesem Rechner anwenden ({sys})", { sys: system === "windows" ? "Windows" : "Linux" })}>{t("Anwenden")}</button>}
       </header>
 
-      <Library images={images} urls={urls} themes={themes} templates={templates} selectedImage={imageId} busy={busy}
+      {libOpen && <Library images={images} urls={urls} themes={themes} templates={templates} selectedImage={imageId} busy={busy}
         onAddImages={addImages} onWallhaven={() => setWallhaven({})} onSelectImage={(id) => { const i = images.find((x) => x.id === id); if (i) selectImage(i); }}
         onDeleteImage={deleteImage} onOpenTheme={openTheme} onDeleteTheme={deleteTheme}
-        onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />
+        onAddTemplates={addTemplates} onDeleteTemplate={deleteTemplate} />}
 
       <main className="main" id="bereich" tabIndex={-1} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <UpdateBanner />

@@ -65,6 +65,9 @@ export function useStudio() {
   useEffect(() => {
     void detectSystem().then((d) => { setDetected(d); setOs(resolveSystem(loadSystemChoice(), d.system)); });
   }, []);
+  // Seitenleiste (Bilder, Themes, Vorlagen) ein-/ausblenden – mehr Platz für die Vorschau
+  const [libOpen, setLibOpenState] = useState(() => { try { return localStorage.getItem("theme-studio-lib") !== "0"; } catch { return true; } });
+  const setLibOpen = (on: boolean) => { setLibOpenState(on); try { localStorage.setItem("theme-studio-lib", on ? "1" : "0"); } catch { /* egal */ } };
   const [tab, setTabState] = useState<Tab>(() => {
     try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }
     return "farbe";
@@ -332,6 +335,7 @@ export function useStudio() {
     else if (e.key === "d") update({ mode: "dark" });
     else if (e.key === "h") update({ mode: "light" });
     else if (e.key === "z") surprise();
+    else if (e.key === "b") setLibOpen(!libOpen);
   };
   useEffect(() => {
     const h = (e: KeyboardEvent) => keys.current(e);
@@ -419,6 +423,8 @@ export function useStudio() {
     copy,
     shareTheme,
     singleKeys,
+    libOpen,
+    setLibOpen,
     systemChoice,
     setSystemChoice,
     detected,
