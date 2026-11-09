@@ -1,3 +1,4 @@
+import { OsToggle } from "../components/OsToggle";
 import { AppPreviews } from "../components/AppPreviews";
 import { Desktop } from "../components/Desktop";
 import { Readability } from "../components/Readability";
@@ -8,13 +9,14 @@ import { PALETTE_GROUPS, type Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function VorschauPane({ s }: { s: Studio }) {
-  const { settings, os, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
+  const { settings, os, setOs, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
   return (
     <div className="pane">
         <section className="card detail" id="vorschau">
           <div className="detail-head">
             <h2>{t("Vorschau")}{" "}<small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")}</small></h2>
             <span className="grow" />
+            {bothModes && <OsToggle os={os} onChange={setOs} />}
             <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} />{" "}{t("Hell und dunkel nebeneinander")}</label>
           </div>
           {bothModes ? (

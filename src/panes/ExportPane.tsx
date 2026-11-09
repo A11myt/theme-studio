@@ -21,8 +21,10 @@ export function ExportPane({ s }: { s: Studio }) {
         <section className="card export" id="export">
           <h2>{t("Anwenden")}</h2>
           <div className="cmd">
-            <span>Windows</span><code>{cmds.windows}</code>
-            <button type="button" className="ghost" onClick={() => copy(cmds.windows)}>{t("Kopieren")}</button>
+            <span>Windows</span>
+            <p className="cmd-note">{isTauri
+              ? t("Oben rechts auf „Anwenden“ – die App richtet alles selbst ein (Akzent, Wallpaper, Terminal, VS Code, Prompt, komorebi).")
+              : t("In der Desktop-App: „Anwenden“ richtet alles selbst ein. Hier im Browser: Dateien unten speichern.")}</p>
           </div>
           <div className="cmd">
             <span>Linux</span><code>{cmds.linux}</code>
@@ -40,7 +42,7 @@ export function ExportPane({ s }: { s: Studio }) {
               <button type="button" className="ghost" onClick={() => copy(vsSettings)}>{t("Kopieren")}</button>
             </li>
             <li>
-              <span><b>{t("Theme-Datei")}</b><small>{t("für eigene Erweiterungen oder zum Teilen")}</small></span>
+              <span><b>{t("Farbschema als JSON")}</b><small>{t("nur das VS-Code-Farbschema – für eigene Erweiterungen")}</small></span>
               <button type="button" className="ghost" onClick={() => copy(JSON.stringify(vscodeTheme(themeName, settings, pal), null, 2))}>{t("Kopieren")}</button>
               <button type="button" className="ghost" onClick={() => saveFile(`${themeName}.vscode-theme.json`, JSON.stringify(vscodeTheme(themeName, settings, pal), null, 2) + "\n")}>{t("Speichern")}</button>
             </li>

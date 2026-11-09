@@ -1,18 +1,36 @@
 import { Desktop } from "../components/Desktop";
+import { OsToggle } from "../components/OsToggle";
 import { hueName, onColor, palette, SCHEMES, type Mode, type SchemeName } from "../lib/color";
+import { useRef, useState } from "react";
 import { hasWallhaven } from "../lib/platform";
 import { nearestWallhavenColor } from "../lib/wallhaven";
 import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function FarbePane({ s }: { s: Studio }) {
-  const { settings, os, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg } = s;
+  const { settings, os, setOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages } = s;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
   return (
     <div className="pane">
         <section className="card setup" id="farbe">
           <div className="hero">
-            {bg ? <img src={bg} alt={image?.name} /> : <div className="noimg">{t("Kein Bild – nur Farbe")}</div>}
-            {hasWallhaven && <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
+            {bg ? <img src={bg} alt={image?.name} /> : (
+              <div className={`empty-hero ${over ? "over" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+                onDrop={(e) => { e.preventDefault(); setOver(false); const f = [...e.dataTransfer.files].filter((x) => x.type.startsWith("image/")); if (f.length) void addImages(f); }}>
+                <b>{t("Starte mit einem Wallpaper")}</b>
+                <span>{t("Bild hierher ziehen – Theme Studio holt die Farben heraus.")}</span>
+                <div className="empty-actions">
+                  <button type="button" className="primary" onClick={() => fileInput.current?.click()}>{t("Bild wählen …")}</button>
+                  {hasWallhaven && <button type="button" className="ghost" onClick={() => setWallhaven({})}>{t("Auf wallhaven suchen")}</button>}
+                </div>
+                <small>{t("Oder rechts eine eigene Farbe wählen – das geht auch ohne Bild.")}</small>
+                <input ref={fileInput} type="file" accept="image/*" multiple hidden
+                  onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void addImages(f); e.target.value = ""; }} />
+              </div>
+            )}
+            {hasWallhaven && bg && <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
               title={t("wallhaven nach Bildern in der Ausgangsfarbe durchsuchen")}>
               <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} />{" "}{t("Passende Wallpaper suchen")}
             </button>}
@@ -54,11 +72,11 @@ export function FarbePane({ s }: { s: Studio }) {
               <h2>{t("Feinjustieren")}
                 {(tune.hue !== 0 || tune.chroma !== 1) && <button type="button" className="link" onClick={() => update({ tune: undefined })}>{t("zurücksetzen")}</button>}
               </h2>
-              <label>{t("Farbton")}{" "}<code>{tune.hue > 0 ? "+" : ""}{tune.hue}°</code>
+              <label><span className="tune-row"><span>{t("Farbton")}</span><code>{tune.hue > 0 ? "+" : ""}{tune.hue}°</code></span>
                 <input type="range" min={-60} max={60} step={1} value={tune.hue}
                   onChange={(e) => update({ tune: { ...tune, hue: Number(e.target.value) } })} aria-label={t("Farbton verschieben")} />
               </label>
-              <label>{t("Buntheit")}{" "}<code>{Math.round(tune.chroma * 100)} %</code>
+              <label><span className="tune-row"><span>{t("Buntheit")}</span><code>{Math.round(tune.chroma * 100)} %</code></span>
                 <input type="range" min={0.4} max={1.6} step={0.05} value={tune.chroma}
                   onChange={(e) => update({ tune: { ...tune, chroma: Number(e.target.value) } })} aria-label={t("Buntheit")} />
               </label>
@@ -75,13 +93,17 @@ export function FarbePane({ s }: { s: Studio }) {
 
         {/* Alle Varianten nebeneinander */}
         <section id="varianten">
-          <h2 className="section-title">{t("Varianten")}{" "}<small>{t("anklicken oder Taste 1–9")}</small></h2>
+          <div className="section-head">
+            <h2 className="section-title">{t("Varianten")}{" "}<small>{t("anklicken oder Taste 1–9")}</small></h2>
+            <OsToggle os={os} onChange={setOs} />
+          </div>
           <div className="variants">
             {(Object.keys(SCHEMES) as SchemeName[]).map((k) => {
               const c = palette({ ...settings, scheme: k });
               return (
                 <button key={k} type="button" className="variant" aria-pressed={settings.scheme === k} onClick={() => update({ scheme: k })}>
                   <Desktop c={c} os={os} image={bg} fonts={fonts} />
+                  {settings.scheme === k && <span className="picked" aria-hidden="true">✓</span>}
                   <span className="vname"><kbd>{(Object.keys(SCHEMES) as SchemeName[]).indexOf(k) + 1}</kbd>{SCHEMES[k].label}<small>{t(SCHEMES[k].hint)}</small></span>
                   <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface_container_high].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
                 </button>

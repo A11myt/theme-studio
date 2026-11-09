@@ -21,7 +21,7 @@ export const PALETTE_GROUPS: [string, string[]][] = [
 ];
 
 export type Tab = "sammlung" | "farbe" | "schrift" | "terminal" | "vorschau" | "export";
-export const TAB_IDS: Tab[] = ["sammlung", "farbe", "schrift", "terminal", "vorschau", "export"];
+export const TAB_IDS: Tab[] = ["farbe", "schrift", "terminal", "vorschau", "export", "sammlung"];
 
 
 /** Zustand und Aktionen des Studios – die Bereiche (src/panes) und App.tsx lesen daraus. */
@@ -340,7 +340,7 @@ export function useStudio() {
   }, []);
 
   const importInput = useRef<HTMLInputElement>(null);
-  const TABS = [["sammlung", "Sammlung"], ["farbe", "Farbe"], ["schrift", "Schrift"], ["terminal", "Terminal"], ["vorschau", "Vorschau"], ["export", "Export"]] as const;
+  const TABS = [["farbe", "Farbe"], ["schrift", "Schrift"], ["terminal", "Terminal"], ["vorschau", "Vorschau"], ["export", "Export"], ["sammlung", "Sammlung"]] as const;
   const bg = image ? urls[image.id] : undefined;
 
 

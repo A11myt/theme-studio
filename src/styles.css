@@ -421,3 +421,56 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .shells small { display: block; color: var(--muted); word-break: break-all; }
 .shells .tag { font-style: normal; font-size: .75em; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--accent); color: var(--on-accent); }
 .shells > button { justify-self: start; }
+
+/* ── UX-Feinschliff (Schritte, Leerzustand, Regler, Auswahl, schmale Fenster) ── */
+.tabs-nav button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tabs-nav .step { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .7rem; font-weight: 600;
+  background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
+.tabs-nav button[aria-selected="true"] .step { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.tabs-nav .tab-lib { margin-left: 6px; position: relative; }
+.tabs-nav .tab-lib::before { content: ""; position: absolute; left: -5px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+
+.section-head { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.section-head h3 { margin: 0; }
+.seg-sm button { padding: 3px 10px; font-size: .85rem; }
+
+.empty-hero { aspect-ratio: 16 / 9; border-radius: 9px; border: 2px dashed var(--control, var(--line)); background: var(--panel-2);
+  display: grid; place-content: center; justify-items: center; gap: 8px; padding: 20px; text-align: center; transition: border-color .15s, background .15s; }
+.empty-hero.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel-2)); }
+.empty-hero b { font-size: 1.15rem; }
+.empty-hero > span { color: var(--muted); }
+.empty-hero small { color: var(--muted); }
+.empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 6px 0 2px; }
+.empty-actions button { padding: 8px 16px; }
+
+.tune label { display: block; margin: 10px 0; }
+.tune-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.tune label code { font-size: .75rem; }
+.tune label input { width: 100%; }
+
+.variant { position: relative; }
+.variant[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.variant .picked { position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font-size: .8rem; font-weight: 700; box-shadow: 0 1px 3px #0005; z-index: 1; }
+
+.cmd-note { margin: 0; color: var(--muted); font-size: .88rem; grid-column: 2 / -1; }
+
+@media (max-width: 900px) {
+  .top { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 16px; }
+  .top h1 { grid-column: 1; }
+  .top .tabs-nav { grid-column: 1 / -1; grid-row: 2; overflow-x: auto; scrollbar-width: none; margin: 0; }
+  .top .grow { display: none; }
+  .top .tools { grid-column: 1 / -1; grid-row: 3; display: flex; flex-wrap: wrap; gap: 6px; }
+  .top .name { grid-column: 1; grid-row: 4; width: 100%; min-width: 0; }
+  .library { max-height: 42vh; padding: 4px 16px 16px; }
+  .main { padding: 16px; }
+}
+@media (max-width: 560px) {
+  .variants { grid-template-columns: 1fr 1fr; }
+  .controls .sources { flex-wrap: wrap; }
+}
+@media (max-width: 900px) {
+  .top { order: 0; }
+  .main { order: 1; }
+  .library { order: 2; max-height: none; border-bottom: 0; border-top: 1px solid var(--line); }
+}

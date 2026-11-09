@@ -22,17 +22,13 @@ import { t, useLang } from "./lib/i18n";
 export function App() {
   useLang();                       // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, templates, imageId, settings, os, setOs, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, systemChoice, setSystemChoice, detected, system } = s;
+  const { images, themes, templates, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, systemChoice, setSystemChoice, detected, system } = s;
 
   return (
     <div className="app" style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
       <a className="skip" href="#bereich">{t("Zum Inhalt springen")}</a>
       <header className="top">
         <h1>Theme Studio</h1>
-        <div className="seg" role="group" aria-label={t("Vorschau für")}>
-          <button type="button" aria-pressed={os === "linux"} onClick={() => setOs("linux")}>Linux</button>
-          <button type="button" aria-pressed={os === "windows"} onClick={() => setOs("windows")}>Windows</button>
-        </div>
         <nav className="tabs-nav" role="tablist" aria-label={t("Bereiche")}
           onKeyDown={(e) => {
             // Pfeiltasten/Pos1/Ende wechseln den Bereich (WAI-ARIA Tabs)
@@ -46,7 +42,9 @@ export function App() {
           }}>
           {TABS.map(([id, label], i) => (
             <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
-              tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>{t(label)}</button>
+              className={id === "sammlung" ? "tab-lib" : ""}
+              tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>
+              {id !== "sammlung" && <span className="step" aria-hidden="true">{i + 1}</span>}{t(label)}</button>
           ))}
         </nav>
         <span className="grow" />
