@@ -25,7 +25,7 @@ const KBAR = `${HOME}\\komorebi.bar.json`;
 function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv>; fonts?: string[]; komorebi?: { state: number; reload: number; output?: string }; policy?: Partial<Record<"powershell" | "pwsh", string>>; orig?: Record<string, unknown>; regInit?: Record<string, RegSet["value"]> } = {}) {
   const fs = new Map(Object.entries(files));
   const dirs = new Set<string>();
-  for (const f of fs.keys()) dirs.add(f.slice(0, f.lastIndexOf("\\")));
+  for (const f of fs.keys()) for (let i = f.lastIndexOf("\\"); i > 0; i = f.lastIndexOf("\\", i - 1)) dirs.add(f.slice(0, i));
   const reg: RegSet[] = [];
   const orig = new Map<string, unknown>(Object.entries(opts.orig ?? {}));
   const log: string[] = [];
@@ -107,7 +107,7 @@ describe("Windows anwenden (alles installiert)", () => {
   it("setzt alle Ziele, lässt Fremdes stehen, Protokoll + Registry stimmen", async () => {
     const w = fakeWindows({ [WT]: WT_TEXT, [VS]: VS_TEXT, [PS5]: PS_TEXT, [KOMO]: '{ "border": true }', [KBAR]: '{ "height": 34 }' });
     const { results } = await applyAll(w.b, OPTS);
-    expect(Object.fromEntries(results.map((r) => [r.id, r.status]))).toEqual({ windows: "ok", terminal: "ok", vscode: "ok", ohmyposh: "ok", komorebi: "ok" });
+    expect(Object.fromEntries(results.map((r) => [r.id, r.status]))).toEqual({ windows: "ok", terminal: "ok", vscode: "ok", ohmyposh: "ok", komorebi: "ok", obsidian: "skipped", firefox: "skipped" });
     // Windows Terminal: eigenes Schema + Profil bleiben, unseres dazu
     const wt = JSON.parse(w.fs.get(WT)!);
     expect(wt.schemes.map((s: any) => s.name)).toEqual(["Campbell", "Theme Studio"]);
@@ -340,5 +340,41 @@ describe("Zurücksetzen: Autostart, whkd, Win-Tasten (install.ps1)", () => {
     expect(results.find((r) => r.id === "hotkeys")!.status).toBe("skipped");
     expect(b.reg.some((r) => r.name === "DisabledHotkeys")).toBe(false);
     expect(b.calls).not.toContain("explorer");
+  });
+});
+
+describe("Obsidian und Firefox", () => {
+  const OBS = `${ENV.appdata}\\obsidian\\obsidian.json`;
+  const VAULT = `${HOME}\\Notizen`;
+  const FFB = `${ENV.appdata}\\Mozilla\\Firefox`;
+  const PROF = `${FFB}\\Profiles\\abc.default-release`;
+  const files = () => ({
+    [OBS]: JSON.stringify({ vaults: { a: { path: VAULT } } }),
+    [`${VAULT}\\.obsidian\\appearance.json`]: '{ "theme": "obsidian", "enabledCssSnippets": ["mein"] }',
+    [`${FFB}\\profiles.ini`]: "[General]\nStartWithLastProfile=1\n\n[Profile0]\nName=default-release\nIsRelative=1\nPath=Profiles/abc.default-release\n",
+    [`${PROF}\\prefs.js`]: "",
+    [`${PROF}\\chrome\\userChrome.css`]: "/* mein */\n#nav-bar { height: 30px }\n",
+  });
+  it("Profile/Vaults gelesen, Snippet eingeschaltet, userChrome-Block + Pref gesetzt – und Zurücksetzen räumt auf", async () => {
+    const { firefoxProfiles } = await import("../src/lib/apps");
+    expect(firefoxProfiles("[Profile0]\nIsRelative=0\nPath=D:/ff/p1\n[Profile1]\nIsRelative=1\nPath=Profiles/x\n", "B", "\\")).toEqual(["D:\\ff\\p1", "B\\Profiles\\x"]);
+    const w = fakeWindows(files());
+    const { results } = await applyAll(w.b, { ...OPTS, only: ["obsidian", "firefox"] });
+    expect(results.map((r) => r.status)).toEqual(["ok", "ok"]);
+    expect(w.fs.get(`${VAULT}\\.obsidian\\snippets\\theme-studio.css`)).toContain("--background-primary");
+    expect(JSON.parse(w.fs.get(`${VAULT}\\.obsidian\\appearance.json`)!).enabledCssSnippets).toEqual(["mein", "theme-studio"]);
+    const css = w.fs.get(`${PROF}\\chrome\\userChrome.css`)!;
+    expect(css).toContain("#nav-bar { height: 30px }");
+    expect(css).toContain("--toolbar-bgcolor");
+    expect(w.fs.get(`${PROF}\\user.js`)).toContain("legacyUserProfileCustomizations");
+    await applyAll(w.b, { ...OPTS, only: ["firefox"] });                         // zweimal: ein Block, eine Zeile
+    expect(w.fs.get(`${PROF}\\chrome\\userChrome.css`)!.match(/>>> theme-studio/g)).toHaveLength(1);
+    expect(w.fs.get(`${PROF}\\user.js`)!.match(/legacyUserProfile/g)).toHaveLength(1);
+    const { resetAll } = await import("../src/lib/windows/reset");
+    await resetAll(w.b);
+    expect(w.fs.has(`${VAULT}\\.obsidian\\snippets\\theme-studio.css`)).toBe(false);
+    expect(JSON.parse(w.fs.get(`${VAULT}\\.obsidian\\appearance.json`)!).enabledCssSnippets).toEqual(["mein"]);
+    expect(w.fs.get(`${PROF}\\chrome\\userChrome.css`)).toBe("/* mein */\n#nav-bar { height: 30px }\n");
+    expect(w.fs.get(`${PROF}\\user.js`)).not.toContain("legacyUserProfile");
   });
 });

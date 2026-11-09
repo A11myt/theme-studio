@@ -484,3 +484,9 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
   text-align: left; padding: 8px 10px; border-radius: 7px; color: var(--fg); }
 .more-menu button:hover, .more-menu button:focus-visible { background: var(--panel-2); outline: none; }
 .more-menu kbd { font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+
+/* Einstellungen: Im Hintergrund */
+.bg-settings { border-top: 1px solid var(--line); }
+.bg-settings h3 { margin: 0 0 4px; font-size: .95rem; }
+.bg-settings small { display: block; color: var(--muted); }
+.bg-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

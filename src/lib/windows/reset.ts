@@ -3,6 +3,7 @@
 // Fremde Einstellungen bleiben unangetastet; das Zurücksetzen selbst ist wieder eine Sicherung (→ Rückgängig).
 import { t as tr } from "../i18n";
 import { detectShells, writeShells } from "../shells";
+import { CSS_BEGIN, CSS_END, FF_PREF_LINE, OBSIDIAN_SNIPPET, upsertMarked } from "../apps";
 import { conflicts, detect, komorebiDir, MARK_BEGIN_JSON, MARK_END_JSON, res, SCHEME_NAME, stamp, vscodeCandidates, type TargetResult } from "./apply";
 import { join, type Bridge, type RegSet, type RegValue, type WinEnv } from "./bridge";
 import { parseJsonc } from "./jsonc";
@@ -149,6 +150,39 @@ export async function resetAll(b: Bridge): Promise<{ results: TargetResult[]; se
     const st = await b.runTool("komorebic", ["state"]).catch(() => ({ code: -1, output: "" }));
     if (st.code === 0) await b.runTool("komorebic", ["reload-configuration"]).catch(() => undefined);
     return res("komorebi", "ok", details.length ? tr("Rahmen und Leiste wieder mit Standard-Farben") : tr("nichts zu tun"), details);
+  });
+
+  // Obsidian: Snippet ausschalten und entfernen
+  const ob = dets.find((d) => d.id === "obsidian");
+  if (ob?.found) await run("obsidian", async (details) => {
+    for (const vault of ob.where) {
+      const dir = join(vault, ".obsidian");
+      const appFile = join(dir, "appearance.json");
+      const text = await b.read(appFile);
+      try {
+        const data = text ? JSON.parse(text) : null;
+        if (data && Array.isArray(data.enabledCssSnippets) && data.enabledCssSnippets.includes(OBSIDIAN_SNIPPET)) {
+          data.enabledCssSnippets = data.enabledCssSnippets.filter((x: string) => x !== OBSIDIAN_SNIPPET);
+          await b.write(session, appFile, JSON.stringify(data, null, 2));
+        }
+      } catch { /* unlesbar → nur Datei entfernen */ }
+      if (await b.remove(session, join(dir, "snippets", `${OBSIDIAN_SNIPPET}.css`))) details.push(`Snippet entfernt: ${vault}`);
+    }
+    return res("obsidian", "ok", details.length ? tr("Theme-Studio-Snippet entfernt") : tr("nichts zu tun"), details);
+  });
+
+  // Firefox: Block aus userChrome.css und unsere Zeile aus user.js
+  const ff = dets.find((d) => d.id === "firefox");
+  if (ff?.found) await run("firefox", async (details) => {
+    for (const prof of ff.where) {
+      const css = join(prof, "chrome", "userChrome.css");
+      const t = await b.read(css);
+      if (t?.includes(CSS_BEGIN)) { await b.write(session, css, upsertMarked(t, CSS_BEGIN, CSS_END, null)); details.push(`userChrome.css bereinigt: ${prof}`); }
+      const userJs = join(prof, "user.js");
+      const uj = await b.read(userJs);
+      if (uj?.includes(FF_PREF_LINE)) await b.write(session, userJs, uj.split(/\r?\n/).filter((l) => l !== FF_PREF_LINE).join("\n"));
+    }
+    return res("firefox", "ok", details.length ? tr("Firefox-Farben entfernt – wirkt nach dem nächsten Start") : tr("nichts zu tun"), details);
   });
 
   if (e.os === "windows") {

@@ -10,10 +10,11 @@ import { vscodeTheme } from "../vscode";
 import { join, type Bridge, type RegSet, type WinEnv } from "./bridge";
 import { parseJsonc, upsertBlock } from "./jsonc";
 import OMP_DEFAULT from "./ohmyposh-default.json?raw";
+import { CSS_BEGIN, CSS_END, FF_PREF_LINE, firefoxCss, firefoxProfiles, OBSIDIAN_SNIPPET, obsidianCss, obsidianVaults, upsertMarked } from "../apps";
 import { chosenShells, detectShells, initLines, promptDir, writeShells } from "../shells";
 import { t as tr } from "../i18n";
 
-export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi" | "autostart" | "hotkeys";
+export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi" | "obsidian" | "firefox" | "autostart" | "hotkeys";
 export type Status = "ok" | "warn" | "skipped" | "error";
 
 export interface Detection {
@@ -49,6 +50,8 @@ export const LABELS: Record<TargetId, string> = {
   vscode: "VS Code",
   ohmyposh: "oh-my-posh (PowerShell-Prompt)",
   komorebi: "komorebi (Rahmen + Leiste)",
+  obsidian: "Obsidian (CSS-Snippet)",
+  firefox: "Firefox (Tableiste, Menüs)",
   autostart: "Autostart (Farb-Automatik, whkd)",
   hotkeys: "Win-Tastenkombinationen",
 };
@@ -89,6 +92,9 @@ export async function detect(b: Bridge, e: WinEnv): Promise<Detection[]> {
   const wt = await exists(terminalCandidates(e));
   const vs = await exists(vscodeCandidates(e).map((c) => c.dir));
   const kd = komorebiDir(e);
+  const vaults = await exists(obsidianVaults((await b.read(join(e.appdata, "obsidian", "obsidian.json")).catch(() => null)) ?? ""));
+  const ffBase = join(e.appdata, "Mozilla", "Firefox");
+  const ffProfiles = await exists(firefoxProfiles((await b.read(join(ffBase, "profiles.ini")).catch(() => null)) ?? "", ffBase, "\\"));
   const kfiles = await exists([join(kd, "komorebi.json"), join(kd, "komorebi.bar.json"), ...[1, 2, 3].map((i) => join(kd, `komorebi.bar.${i}.json`))]);
   return [
     { id: "windows", label: LABELS.windows, found: e.os === "windows", where: e.windowsBuild ? [e.windowsBuild] : [],
@@ -104,6 +110,10 @@ export async function detect(b: Bridge, e: WinEnv): Promise<Detection[]> {
       hint: !e.tools.komorebic
         ? tr("komorebi nicht installiert (komorebic nicht gefunden). Installieren: scoop install komorebi")
         : tr("komorebi.json nicht gefunden in {dir} – einmal „komorebic quickstart“ ausführen oder KOMOREBI_CONFIG_HOME setzen", { dir: kd }) },
+    { id: "obsidian", label: LABELS.obsidian, found: vaults.length > 0, where: vaults,
+      hint: tr("Obsidian nicht gefunden (kein Vault in %APPDATA%\\obsidian\\obsidian.json)") },
+    { id: "firefox", label: LABELS.firefox, found: ffProfiles.length > 0, where: ffProfiles,
+      hint: tr("Firefox nicht gefunden (kein Profil in %APPDATA%\\Mozilla\\Firefox)") },
   ];
 }
 
@@ -378,6 +388,37 @@ async function applyKomorebi(b: Bridge, session: string, o: ApplyOptions, det: D
   return res("komorebi", "ok", tr("Rahmen und Leiste neu eingefärbt"), details);
 }
 
+// ── Obsidian + Firefox ──────────────────────────────────────────────────────
+
+async function applyObsidian(b: Bridge, session: string, o: ApplyOptions, det: Detection, c: Palette): Promise<TargetResult> {
+  const details: string[] = [];
+  for (const vault of det.where) {
+    const dir = join(vault, ".obsidian");
+    await b.write(session, join(dir, "snippets", `${OBSIDIAN_SNIPPET}.css`), obsidianCss(c, o.withFonts ? o.fonts : undefined) + "\n");
+    const appFile = join(dir, "appearance.json");
+    const text = await b.read(appFile);
+    let data: Record<string, any> = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { details.push(`appearance.json unlesbar, Snippet nur abgelegt: ${appFile}`); continue; }
+    const list: string[] = Array.isArray(data.enabledCssSnippets) ? data.enabledCssSnippets : [];
+    if (!list.includes(OBSIDIAN_SNIPPET)) { data.enabledCssSnippets = [...list, OBSIDIAN_SNIPPET]; await b.write(session, appFile, JSON.stringify(data, null, 2)); }
+    details.push(`Snippet: ${vault}`);
+  }
+  return res("obsidian", "ok", tr("Snippet in {n} Vault(s) – wirkt sofort, sonst Obsidian neu laden", { n: det.where.length }), details);
+}
+
+async function applyFirefox(b: Bridge, session: string, det: Detection, c: Palette): Promise<TargetResult> {
+  const details: string[] = [];
+  for (const prof of det.where) {
+    const css = join(prof, "chrome", "userChrome.css");
+    await b.write(session, css, upsertMarked(await b.read(css), CSS_BEGIN, CSS_END, firefoxCss(c)));
+    const userJs = join(prof, "user.js");
+    const uj = await b.read(userJs);
+    if (!uj?.includes("toolkit.legacyUserProfileCustomizations.stylesheets")) await b.write(session, userJs, (uj ? uj.replace(/\s*$/, "\n") : "") + FF_PREF_LINE + "\n");
+    details.push(`userChrome.css: ${prof}`);
+  }
+  return res("firefox", "ok", tr("userChrome in {n} Profil(en) – wirkt nach dem nächsten Firefox-Start", { n: det.where.length }), details);
+}
+
 // ── Ablauf ──────────────────────────────────────────────────────────────────
 
 export function res(id: TargetId, status: Status, message: string, details: string[]): TargetResult {
@@ -409,6 +450,8 @@ export async function applyAll(b: Bridge, o: ApplyOptions): Promise<{ results: T
           : d.id === "terminal" ? await applyTerminal(b, session, o, d, c)
           : d.id === "vscode" ? await applyVscode(b, session, o, d, e, c)
           : d.id === "ohmyposh" ? await applyOhmyposh(b, session, o, e)
+          : d.id === "obsidian" ? await applyObsidian(b, session, o, d, c)
+          : d.id === "firefox" ? await applyFirefox(b, session, d, c)
           : await applyKomorebi(b, session, o, d, c);
       } catch (err) {
         r = res(d.id, "error", tr("unerwarteter Fehler: {e}", { e: String(err).replace(/^Error: /, "") }), [String((err as Error)?.stack ?? err)]);

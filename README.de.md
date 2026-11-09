@@ -38,6 +38,9 @@ Beim ersten Start fragt die App, für welches System sie Themes anwenden soll (a
   Schema + Schrift, VS-Code-Farben + Schrift, PowerShell-Prompt, komorebi-Rahmen und -Leiste. Zeigt vorher, was
   gefunden wurde und was fehlt (mit Installationshinweis), protokolliert jeden Schritt, **Rückgängig** stellt den
   vorherigen Stand her, **Auf Standard zurücksetzen** entfernt alles, was Theme Studio je geändert hat (zurück wie vor Theme Studio, sonst Windows-Standard), **Diagnose kopieren** für Hilfe (Benutzername ersetzt)
+- **Im Hintergrund** (Windows): Symbol im Infobereich – gespeicherte Themes mit einem Klick anwenden,
+  **automatisch einfärben**, sobald sich das Windows-Wallpaper ändert, auf Wunsch mit Windows starten (installierte Version)
+- **Mehr Programme**: Obsidian (CSS-Snippet je Vault) und Firefox (userChrome.css) werden mit eingefärbt
 - **Anwenden unter Linux** über deine eigenen Skripte `wallthemes` + `fontgen`
 - **Vorschauen** von VS Code, Firefox, Obsidian und Discord; 16 ANSI-Farben passend zum Theme
 - **Exporte**: Theme-Datei (wieder einlesbar), VS-Code-Erweiterung (`.vsix`), Windows-Terminal-Schema,

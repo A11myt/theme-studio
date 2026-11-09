@@ -16,11 +16,13 @@ interface Props {
   onDuplicate: (t: StoredTheme) => void;
   onDelete: (id: string) => void;
   onShare: (t: StoredTheme) => void;
+  onApply?: (t: StoredTheme) => Promise<void>;   // direkt anwenden (Desktop-App unter Windows)
 }
 
 type Sort = "neu" | "name" | "farbe";
 
-export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, onDelete, onShare }: Props) {
+export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, onDelete, onShare, onApply }: Props) {
+  const [applying, setApplying] = useState<string>();
   const [q, setQ] = useState("");
   const [favOnly, setFavOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("neu");
@@ -88,7 +90,11 @@ export function Collection({ themes, urls, os, onOpen, onUpdate, onDuplicate, on
                 <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
               </div>
               <div className="tc-actions">
-                <button type="button" className="primary" onClick={() => onOpen(th)}>{t("Öffnen")}</button>
+                {onApply
+                  ? <button type="button" className="primary" disabled={!!applying} onClick={async () => { setApplying(th.id); try { await onApply(th); } finally { setApplying(undefined); } }}>
+                      {applying === th.id ? t("Wird angewendet …") : t("Anwenden")}</button>
+                  : null}
+                <button type="button" className={onApply ? "ghost" : "primary"} onClick={() => onOpen(th)}>{t("Öffnen")}</button>
                 <button type="button" className="ghost" onClick={() => setRenaming(th.id)}>{t("Umbenennen")}</button>
                 <button type="button" className="ghost" onClick={() => onDuplicate(th)}>{t("Duplizieren")}</button>
                 <button type="button" className="ghost" onClick={() => onShare(th)} title={t("Link mit diesem Theme kopieren")}>{t("Link")}</button>

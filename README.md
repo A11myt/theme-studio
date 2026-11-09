@@ -38,6 +38,9 @@ On first start the app asks which system it should apply themes to (detected aut
   font, VS Code colors + font, PowerShell prompt, komorebi borders and bar. Shows beforehand what was found and
   what is missing (with install hints), logs every step, **undo** restores the previous state, **reset to default** removes everything Theme Studio ever changed (back to how Windows was before, otherwise Windows defaults),
   **copy diagnostics** for help (user name redacted)
+- **Runs in the background** (Windows): icon in the notification area – apply saved themes with one click,
+  **recolor automatically** whenever the Windows wallpaper changes, optionally start with Windows (installed version)
+- **More apps**: Obsidian (CSS snippet per vault) and Firefox (userChrome.css) are colored too
 - **Apply on Linux** via your own `wallthemes` + `fontgen` scripts
 - **Previews** of VS Code, Firefox, Obsidian and Discord; 16 ANSI colors harmonized to your theme
 - **Exports**: theme file (re-importable), VS Code extension (`.vsix`), Windows Terminal scheme, komorebi theme,

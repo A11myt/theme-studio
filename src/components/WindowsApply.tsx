@@ -11,6 +11,7 @@ import { useDialog } from "../lib/useDialog";
 import { applyAll, conflicts, detect, diagnose, LABELS, type Detection, type TargetId, type TargetResult } from "../lib/windows/apply";
 import { tauriBridge, type Bridge } from "../lib/windows/bridge";
 import { resetAll } from "../lib/windows/reset";
+import { rememberApply } from "../lib/background";
 
 interface Props {
   name: string;
@@ -70,6 +71,8 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
       setResults(r.results);
       setSession(r.session);
       setLogFile(r.logFile);
+      // fürs automatische Einfärben merken, womit angewendet wurde
+      rememberApply({ scheme: settings.scheme, mode: settings.mode, contrast: settings.contrast, fonts, prompt, titlebars, withFonts, only: [...chosen] });
     } catch (e) {
       setNote(t("Anwenden abgebrochen: {e}", { e: errText(e) }));
     }

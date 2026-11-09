@@ -5,6 +5,7 @@ import { isTauri } from "../lib/platform";
 import { pickFolder, type AppSettings } from "../lib/settings";
 import { setLang, t, useLang } from "../lib/i18n";
 import type { Detected, SystemChoice } from "../lib/system";
+import { BackgroundSettings } from "./BackgroundSettings";
 
 interface Props {
   value: AppSettings;
@@ -92,6 +93,7 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detect
             <span>{t("Einzeltasten-Kürzel (1–9 Variante, D/H dunkel/hell, Z Zufall, B Seitenleiste)")}<small>{" "}{t("– ausschalten, falls du Spracheingabe oder einen Screenreader nutzt")}</small></span>
           </label>
         </div>
+        {isTauri && (system === "windows" || (system === "auto" && detected?.system === "windows")) && <BackgroundSettings />}
         <div className="wh-foot">
           <span className="grow" />
           <button type="button" className="ghost" onClick={onClose}>{isTauri ? t("Abbrechen") : t("Schließen")}</button>

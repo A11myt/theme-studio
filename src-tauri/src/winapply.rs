@@ -553,6 +553,7 @@ pub fn set_wallpaper(path: String) -> Result<(), String> {
     if !Path::new(&path).is_file() {
         return Err(format!("Bild nicht gefunden: {path}"));
     }
+    crate::background::note_own_wallpaper(&path);
     #[cfg(windows)]
     {
         use windows_sys::Win32::UI::WindowsAndMessaging::{SystemParametersInfoW, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE};

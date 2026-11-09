@@ -19,11 +19,14 @@ import { VorschauPane } from "./panes/VorschauPane";
 import { ExportPane } from "./panes/ExportPane";
 import { useStudio } from "./useStudio";
 import { t, useLang } from "./lib/i18n";
+import { useBackground } from "./lib/background";
 
 export function App() {
-  useLang();                       // Sprachwechsel → alles neu zeichnen
+  const lang = useLang();          // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
   const { images, themes, templates, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, showNerd, setShowNerd, setFontsKey, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, openTheme, deleteTheme, importTheme, surprise, addTemplates, deleteTemplate, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
+
+  useBackground({ themes, lang, windows: system === "windows", fonts, prompt, flash });
 
   return (
     <div className={`app ${libOpen ? "" : "lib-closed"}`} style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
