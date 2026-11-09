@@ -11,39 +11,56 @@ export function FarbePane({ s }: { s: Studio }) {
   const { settings, os, setOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages, pal } = s;
   const fileInput = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const schemes = Object.keys(SCHEMES) as SchemeName[];
   return (
-    <div className="pane">
-        <section className="card setup" id="farbe">
-          <div className="hero">
-            {bg ? <img src={bg} alt={image?.name} /> : (
-              <div className={`empty-hero ${over ? "over" : ""}`}
-                onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
-                onDrop={(e) => { e.preventDefault(); setOver(false); const f = [...e.dataTransfer.files].filter((x) => x.type.startsWith("image/")); if (f.length) void addImages(f); }}>
-                <b>{t("Starte mit einem Wallpaper")}</b>
-                <span>{t("Bild hierher ziehen – Theme Studio holt die Farben heraus.")}</span>
-                <div className="empty-actions">
-                  <button type="button" className="primary" onClick={() => fileInput.current?.click()}>{t("Bild wählen …")}</button>
-                  {hasWallhaven && <button type="button" className="ghost" onClick={() => setWallhaven({})}>{t("Auf wallhaven suchen")}</button>}
-                </div>
-                <small>{t("Oder rechts eine eigene Farbe wählen – das geht auch ohne Bild.")}</small>
-                <input ref={fileInput} type="file" accept="image/*" multiple hidden
-                  onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void addImages(f); e.target.value = ""; }} />
+    <div className="pane farbe-pane">
+      {/* Bühne: große Vorschau der gewählten Variante, darunter alle Varianten als Leiste */}
+      <section className="card stage" aria-label={t("Vorschau und Varianten")}>
+        <div className="stage-head">
+          <h2>{SCHEMES[settings.scheme].label}<small>{t(SCHEMES[settings.scheme].hint)}</small></h2>
+          <span className="grow" />
+          {hasWallhaven && bg && <button type="button" className="ghost" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
+            title={t("wallhaven nach Bildern in der Ausgangsfarbe durchsuchen")}>
+            <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} />{t("Passende Wallpaper suchen")}
+          </button>}
+          <OsToggle os={os} onChange={setOs} />
+        </div>
+        <div className="stage-preview">
+          {bg ? <Desktop c={pal} os={os} image={bg} size="large" fonts={fonts} /> : (
+            <div className={`empty-hero ${over ? "over" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+              onDrop={(e) => { e.preventDefault(); setOver(false); const f = [...e.dataTransfer.files].filter((x) => x.type.startsWith("image/")); if (f.length) void addImages(f); }}>
+              <b>{t("Starte mit einem Wallpaper")}</b>
+              <span>{t("Bild hierher ziehen – Theme Studio holt die Farben heraus.")}</span>
+              <div className="empty-actions">
+                <button type="button" className="primary" onClick={() => fileInput.current?.click()}>{t("Bild wählen …")}</button>
+                {hasWallhaven && <button type="button" className="ghost" onClick={() => setWallhaven({})}>{t("Auf wallhaven suchen")}</button>}
               </div>
-            )}
-            {hasWallhaven && bg && <button type="button" className="ghost match" onClick={() => setWallhaven({ color: nearestWallhavenColor(effSource) })}
-              title={t("wallhaven nach Bildern in der Ausgangsfarbe durchsuchen")}>
-              <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} />{" "}{t("Passende Wallpaper suchen")}
-            </button>}
-            {bg && (
-              <ul className="palette-peek" aria-label={t("Palette dieser Variante")}>
-                {([[t("Primär"), pal.primary, pal.on_primary], [t("Sekundär"), pal.secondary, pal.on_secondary], [t("Tertiär"), pal.tertiary, pal.on_tertiary],
-                   [t("Fläche"), pal.surface, pal.on_surface], [t("Karte"), pal.surface_container_high, pal.on_surface], [t("Fehler"), pal.error, pal.on_error]] as [string, string, string][]).map(([n, bgc, fg]) => (
-                  <li key={n} style={{ background: bgc, color: fg }}><span>{n}</span><code>{bgc}</code></li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="controls">
+              <small>{t("Oder rechts eine eigene Farbe wählen – das geht auch ohne Bild.")}</small>
+              <input ref={fileInput} type="file" accept="image/*" multiple hidden
+                onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void addImages(f); e.target.value = ""; }} />
+            </div>
+          )}
+        </div>
+        <div className="vstrip" role="radiogroup" aria-label={t("Varianten – anklicken oder Taste 1–9")}>
+          {schemes.map((k, i) => {
+            const c = palette({ ...settings, scheme: k });
+            const on = settings.scheme === k;
+            return (
+              <button key={k} type="button" role="radio" aria-checked={on} className={`vchip ${on ? "on" : ""}`} onClick={() => update({ scheme: k })}
+                title={`${SCHEMES[k].label} – ${t(SCHEMES[k].hint)} (${i + 1})`}>
+                <span className="vchip-swatch" style={{ background: c.surface }}>
+                  {[c.primary, c.secondary, c.tertiary].map((x, j) => <i key={j} style={{ background: x }} />)}
+                </span>
+                <span className="vchip-name">{SCHEMES[k].label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Prüfbereich: alles, was die Farbe bestimmt */}
+      <aside className="card inspector controls">
             <h2>{t("Ausgangsfarbe")}</h2>
             <div className="sources">
               {(image?.sources ?? []).map((s, i) => (
@@ -95,31 +112,15 @@ export function FarbePane({ s }: { s: Studio }) {
                   <button type="button" className="link" onClick={() => update({ overrides: undefined })}>{t("zurücksetzen")}</button></span>}
               </p>
             </div>
-          </div>
-        </section>
 
-
-        {/* Alle Varianten nebeneinander */}
-        <section id="varianten">
-          <div className="section-head">
-            <h2 className="section-title">{t("Varianten")}{" "}<small>{t("anklicken oder Taste 1–9")}</small></h2>
-            <OsToggle os={os} onChange={setOs} />
-          </div>
-          <div className="variants">
-            {(Object.keys(SCHEMES) as SchemeName[]).map((k) => {
-              const c = palette({ ...settings, scheme: k });
-              return (
-                <button key={k} type="button" className="variant" aria-pressed={settings.scheme === k} onClick={() => update({ scheme: k })}>
-                  <Desktop c={c} os={os} image={bg} fonts={fonts} />
-                  {settings.scheme === k && <span className="picked" aria-hidden="true">✓</span>}
-                  <span className="vname"><kbd>{(Object.keys(SCHEMES) as SchemeName[]).indexOf(k) + 1}</kbd>{SCHEMES[k].label}<small>{t(SCHEMES[k].hint)}</small></span>
-                  <span className="strip">{[c.primary, c.secondary, c.tertiary, c.surface_container_high].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-        <div className="pane-foot"><button type="button" className="primary" onClick={() => setTab("schrift")}>{t("Weiter: Schrift →")}</button></div>
+        <ul className="palette-peek" aria-label={t("Palette dieser Variante")}>
+          {([[t("Primär"), pal.primary, pal.on_primary], [t("Sekundär"), pal.secondary, pal.on_secondary], [t("Tertiär"), pal.tertiary, pal.on_tertiary],
+             [t("Fläche"), pal.surface, pal.on_surface], [t("Karte"), pal.surface_container_high, pal.on_surface], [t("Fehler"), pal.error, pal.on_error]] as [string, string, string][]).map(([n, bgc, fg]) => (
+            <li key={n} style={{ background: bgc, color: fg }}><span>{n}</span><code>{bgc}</code></li>
+          ))}
+        </ul>
+        <button type="button" className="primary next" onClick={() => setTab("schrift")}>{t("Weiter: Schrift →")}</button>
+      </aside>
     </div>
   );
 }

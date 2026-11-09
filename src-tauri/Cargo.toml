@@ -1,6 +1,6 @@
 [package]
 name = "theme-studio"
-version = "0.3.3"
+version = "0.4.0"
 description = "Theme Studio – color themes from your own wallpapers"
 authors = ["A11myt"]
 license = "MIT"
