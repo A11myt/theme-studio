@@ -381,10 +381,10 @@ describe("Obsidian und Firefox", () => {
 });
 
 describe("Hintergrund-Programme einzeln abschalten", () => {
-  const STARTUP = `${ENV.appdata}\Microsoft\Windows\Start Menu\Programs\Startup`;
+  const STARTUP = `${ENV.appdata}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup`;
   it("Status: komorebi im Autostart, whkd läuft, Win-Tasten abgegeben", async () => {
     const { serviceStatus } = await import("../src/lib/windows/services");
-    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" }, { env: { tools: { ...ENV.tools, whkd: "C:\whkd.exe" } }, regInit: { DisabledHotkeys: { kind: "String", value: "1234567QCFDOW" } } });
+    const w = fakeWindows({ [`${STARTUP}\\komorebi.lnk`]: "lnk" }, { env: { tools: { ...ENV.tools, whkd: "C:\\whkd.exe" } }, regInit: { DisabledHotkeys: { kind: "String", value: "1234567QCFDOW" } } });
     const st = await serviceStatus(w.b, await w.b.env());
     expect(st.komorebi).toEqual({ installed: true, running: false, autostart: true });
     expect(st.whkd).toEqual({ installed: true, running: true, autostart: true });
@@ -393,10 +393,10 @@ describe("Hintergrund-Programme einzeln abschalten", () => {
   });
   it("komorebi aus dem Autostart: Verknüpfung weg (gesichert), sonst nichts", async () => {
     const { komorebiAutostartOff } = await import("../src/lib/windows/services");
-    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" });
+    const w = fakeWindows({ [`${STARTUP}\\komorebi.lnk`]: "lnk" });
     const d: string[] = [];
     expect(await komorebiAutostartOff(w.b, await w.b.env(), "s", d)).toBe(true);
-    expect(w.fs.has(`${STARTUP}\komorebi.lnk`)).toBe(false);
+    expect(w.fs.has(`${STARTUP}\\komorebi.lnk`)).toBe(false);
     expect(await komorebiAutostartOff(w.b, await w.b.env(), "s", d)).toBe(false);
   });
   it("komorebi beenden: ältere Version ohne --bar → einfaches stop, Reste beenden", async () => {
@@ -410,7 +410,7 @@ describe("Hintergrund-Programme einzeln abschalten", () => {
   });
   it("whkd aus dem Autostart: komorebic schlägt fehl → Meldung statt Abbruch", async () => {
     const { whkdAutostartOff } = await import("../src/lib/windows/services");
-    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" }, { komorebi: { state: 0, reload: 2, output: "kaputt" } });
+    const w = fakeWindows({ [`${STARTUP}\\komorebi.lnk`]: "lnk" }, { komorebi: { state: 0, reload: 2, output: "kaputt" } });
     expect(await whkdAutostartOff(w.b, await w.b.env(), "s", [])).toContain("kaputt");
   });
 });

@@ -521,7 +521,7 @@ export const EN: Record<string, string> = {
   "Win-Tasten zurück an Windows": "Win keys back to Windows",
   "Zurück an Windows": "Back to Windows",
   "komorebi, whkd und wintheme sind nicht installiert.": "komorebi, whkd and wintheme are not installed.",
-  "Beim „Anwenden” wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh). Farben kommen aus dem Theme.": "On “Apply” this prompt is set up in the selected shells (oh-my-posh). Colors come from the theme.",
+  "Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh). Farben kommen aus dem Theme.": "On “Apply” this prompt is set up in the selected shells (oh-my-posh). Colors come from the theme.",
   "komorebi starten": "Start komorebi",
   "Starten": "Start",
 };
