@@ -16,6 +16,7 @@ export interface WinEnv {
 
 export type RegValue = { kind: "Dword"; value: number } | { kind: "Binary"; value: number[] } | { kind: "String"; value: string } | { kind: "Delete" };
 export interface RegSet { key: string; name: string; value: RegValue }
+export type ProcName = "whkd.exe" | "pythonw.exe" | "komorebi.exe" | "komorebi-bar.exe";
 
 export interface Bridge {
   env(): Promise<WinEnv>;
@@ -40,7 +41,8 @@ export interface Bridge {
   regGet(key: string, name: string): Promise<RegValue | null>;
   backupFile(session: string, path: string): Promise<void>;
   remove(session: string, path: string): Promise<boolean>;
-  stopProcess(name: "whkd.exe" | "pythonw.exe"): Promise<number>;
+  stopProcess(name: ProcName): Promise<number>;
+  processCount(name: ProcName): Promise<number>;
   restartExplorer(): Promise<void>;
 }
 
@@ -69,6 +71,7 @@ export async function tauriBridge(): Promise<Bridge> {
     backupFile: (session, path) => invoke("fs_backup", { session, path }),
     remove: (session, path) => invoke("fs_remove", { session, path }),
     stopProcess: (name) => invoke("stop_process", { name }),
+    processCount: (name) => invoke("process_count", { name }),
     restartExplorer: () => invoke("restart_explorer"),
   };
 }

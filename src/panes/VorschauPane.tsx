@@ -3,7 +3,7 @@ import { OsToggle } from "../components/OsToggle";
 
 type View = "desktop" | "apps" | "palette";
 import { AppPreviews } from "../components/AppPreviews";
-import { Desktop } from "../components/Desktop";
+import { Desktop, type Os } from "../components/Desktop";
 import { Readability } from "../components/Readability";
 import { TerminalPreview } from "../components/TerminalPreview";
 import { onColor, palette, SCHEMES, type Mode } from "../lib/color";
@@ -12,7 +12,7 @@ import { PALETTE_GROUPS, type Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function VorschauPane({ s }: { s: Studio }) {
-  const { settings, os, setOs, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
+  const { settings, os, setOs, onlyOs, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
   const [view, setViewState] = useState<View>(() => { try { return (localStorage.getItem("theme-studio-preview") as View) || "desktop"; } catch { return "desktop"; } });
   const setView = (v: View) => { setViewState(v); try { localStorage.setItem("theme-studio-preview", v); } catch { /* egal */ } };
   return (
@@ -26,7 +26,7 @@ export function VorschauPane({ s }: { s: Studio }) {
               ))}
             </div>
             <span className="grow" />
-            {view === "desktop" && bothModes && <OsToggle os={os} onChange={setOs} />}
+            {view === "desktop" && bothModes && !onlyOs && <OsToggle os={os} onChange={setOs} />}
             {view === "desktop" && <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} />{" "}{t("Hell und dunkel nebeneinander")}</label>}
             <button type="button" className="primary" onClick={() => setTab("export")}>{t("Weiter: Exportieren →")}</button>
           </div>
@@ -34,18 +34,17 @@ export function VorschauPane({ s }: { s: Studio }) {
           {view === "desktop" && (bothModes ? (
             <div className="big">
               {(["light", "dark"] as Mode[]).map((m) => (
-                <Desktop key={m} c={palette({ ...settings, mode: m })} os={os} image={bg} size="large" fonts={fonts} />
+                <Desktop key={m} c={palette({ ...settings, mode: m })} os={onlyOs ?? os} image={bg} size="large" fonts={fonts} />
               ))}
             </div>
           ) : (
             <div className="big">
-              <Desktop c={pal} os="linux" image={bg} size="large" fonts={fonts} />
-              <Desktop c={pal} os="windows" image={bg} size="large" fonts={fonts} />
+              {(onlyOs ? [onlyOs] : ["linux", "windows"] as Os[]).map((o) => <Desktop key={o} c={pal} os={o} image={bg} size="large" fonts={fonts} />)}
             </div>
           ))}
           {view === "apps" && (
             <div className="apps-view">
-              <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
+              <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} os={s.onlyOs} />
               <AppPreviews c={pal} fonts={fonts} />
             </div>
           )}

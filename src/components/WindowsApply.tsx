@@ -9,9 +9,15 @@ import type { PromptOptions } from "../lib/prompt";
 import type { StoredImage } from "../lib/store";
 import { useDialog } from "../lib/useDialog";
 import { applyAll, conflicts, detect, diagnose, LABELS, type Detection, type TargetId, type TargetResult } from "../lib/windows/apply";
-import { tauriBridge, type Bridge } from "../lib/windows/bridge";
+import { tauriBridge, type Bridge, type WinEnv } from "../lib/windows/bridge";
 import { resetAll } from "../lib/windows/reset";
 import { rememberApply } from "../lib/background";
+import { ServicesPanel } from "./ServicesPanel";
+
+// Ziele, die der Nutzer abgewählt hat – bleiben abgewählt (z. B. komorebi nie einfärben)
+const OFF_KEY = "theme-studio-win-off";
+const loadOff = (): TargetId[] => { try { const v = JSON.parse(localStorage.getItem(OFF_KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
+const storeOff = (ids: TargetId[]) => { try { localStorage.setItem(OFF_KEY, JSON.stringify(ids)); } catch { /* egal */ } };
 
 interface Props {
   name: string;
@@ -29,6 +35,7 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [bridge, setBridge] = useState<Bridge>();
+  const [env, setEnv] = useState<WinEnv>();
   const [dets, setDets] = useState<Detection[]>([]);
   const [chosen, setChosen] = useState<Set<TargetId>>(new Set());
   const [setWall, setSetWall] = useState(!!image);
@@ -50,8 +57,10 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
         const d = await detect(b, env);
         setWarnings(await conflicts(b, env));
         setBridge(b);
+        setEnv(env);
         setDets(d);
-        setChosen(new Set(d.filter((x) => x.found).map((x) => x.id)));
+        const off = loadOff();
+        setChosen(new Set(d.filter((x) => x.found && !off.includes(x.id)).map((x) => x.id)));
         setLogFile(env.logFile);
         setState("ready");
       } catch (e) {
@@ -120,7 +129,13 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
     }
   };
 
-  const toggle = (id: TargetId) => setChosen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggle = (id: TargetId) => {
+    const n = new Set(chosen);
+    const off = new Set(loadOff());
+    if (n.has(id)) { n.delete(id); off.add(id); } else { n.add(id); off.delete(id); }
+    storeOff([...off]);
+    setChosen(n);
+  };
   const counts = results.reduce((a, r) => ({ ...a, [r.status]: (a[r.status] ?? 0) + 1 }), {} as Record<string, number>);
 
   return (
@@ -159,6 +174,8 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
                 <span>{fonts.mono ? t("Schrift anwenden: {font} (Terminal, VS Code)", { font: fonts.mono }) : t("Keine Schrift gewählt – Schriften bleiben, wie sie sind")}</span></label>
             </>
           )}
+          {bridge && env?.os === "windows" && state !== "detecting" &&
+            <ServicesPanel bridge={bridge} env={env} busy={state === "running"} onSession={setSession} onNote={setNote} />}
 
           {state === "done" && (
             <>
@@ -181,7 +198,7 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
           <button type="button" className="ghost" onClick={copyDiag} disabled={!bridge}>{t("Diagnose kopieren")}</button>
           <button type="button" className="ghost danger" onClick={reset} disabled={!bridge || state === "running" || state === "detecting"}
             title={t("Alle Änderungen von Theme Studio entfernen – Windows wie vorher")}>{t("Auf Standard zurücksetzen")}</button>
-          {state === "done" && session && <button type="button" className="ghost" onClick={undo}>{t("Rückgängig")}</button>}
+          {session && state !== "running" && <button type="button" className="ghost" onClick={undo}>{t("Rückgängig")}</button>}
           <span className="grow" />
           <button type="button" className="ghost" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>
           {state !== "done" && <button type="button" className="primary" onClick={run} disabled={state !== "ready" || !chosen.size}>

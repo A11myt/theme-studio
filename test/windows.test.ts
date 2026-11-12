@@ -51,6 +51,7 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
     backupFile: async (_s, p) => { calls.push(`backup ${p}`); },
     remove: async (_s, p) => { const had = fs.delete(p); if (had) calls.push(`remove ${p}`); return had; },
     stopProcess: async (n) => { calls.push(`stop ${n}`); return n === "whkd.exe" ? 1 : 0; },
+    processCount: async (n) => (n === "whkd.exe" ? 1 : 0),
     restartExplorer: async () => { calls.push("explorer"); },
     fonts: async () => opts.fonts ?? ["Iosevka Nerd Font Mono", "Hack Nerd Font Mono"],
     log: async (lines) => { log.push(...lines); return "apply.log"; },
@@ -376,5 +377,40 @@ describe("Obsidian und Firefox", () => {
     expect(JSON.parse(w.fs.get(`${VAULT}\\.obsidian\\appearance.json`)!).enabledCssSnippets).toEqual(["mein"]);
     expect(w.fs.get(`${PROF}\\chrome\\userChrome.css`)).toBe("/* mein */\n#nav-bar { height: 30px }\n");
     expect(w.fs.get(`${PROF}\\user.js`)).not.toContain("legacyUserProfile");
+  });
+});
+
+describe("Hintergrund-Programme einzeln abschalten", () => {
+  const STARTUP = `${ENV.appdata}\Microsoft\Windows\Start Menu\Programs\Startup`;
+  it("Status: komorebi im Autostart, whkd läuft, Win-Tasten abgegeben", async () => {
+    const { serviceStatus } = await import("../src/lib/windows/services");
+    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" }, { env: { tools: { ...ENV.tools, whkd: "C:\whkd.exe" } }, regInit: { DisabledHotkeys: { kind: "String", value: "1234567QCFDOW" } } });
+    const st = await serviceStatus(w.b, await w.b.env());
+    expect(st.komorebi).toEqual({ installed: true, running: false, autostart: true });
+    expect(st.whkd).toEqual({ installed: true, running: true, autostart: true });
+    expect(st.wintheme.present).toBe(false);
+    expect(st.hotkeys.taken).toBe(true);
+  });
+  it("komorebi aus dem Autostart: Verknüpfung weg (gesichert), sonst nichts", async () => {
+    const { komorebiAutostartOff } = await import("../src/lib/windows/services");
+    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" });
+    const d: string[] = [];
+    expect(await komorebiAutostartOff(w.b, await w.b.env(), "s", d)).toBe(true);
+    expect(w.fs.has(`${STARTUP}\komorebi.lnk`)).toBe(false);
+    expect(await komorebiAutostartOff(w.b, await w.b.env(), "s", d)).toBe(false);
+  });
+  it("komorebi beenden: ältere Version ohne --bar → einfaches stop, Reste beenden", async () => {
+    const { stopKomorebi } = await import("../src/lib/windows/services");
+    const w = fakeWindows({}, { komorebi: { state: 0, reload: 1, output: "unknown flag --bar" } });
+    await stopKomorebi(w.b, []);
+    expect(w.calls).toContain("komorebic stop --whkd --bar");
+    expect(w.calls).toContain("komorebic stop");
+    expect(w.calls).toContain("stop komorebi-bar.exe");
+    expect(w.calls).toContain("stop whkd.exe");
+  });
+  it("whkd aus dem Autostart: komorebic schlägt fehl → Meldung statt Abbruch", async () => {
+    const { whkdAutostartOff } = await import("../src/lib/windows/services");
+    const w = fakeWindows({ [`${STARTUP}\komorebi.lnk`]: "lnk" }, { komorebi: { state: 0, reload: 2, output: "kaputt" } });
+    expect(await whkdAutostartOff(w.b, await w.b.env(), "s", [])).toContain("kaputt");
   });
 });

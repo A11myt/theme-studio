@@ -9,7 +9,8 @@ import { t } from "../lib/i18n";
 
 export function ExportPane({ s }: { s: Studio }) {
   const tplInput = useRef<HTMLInputElement>(null);
-  const { prompt, templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings } = s;
+  const { prompt, templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, onlyOs } = s;
+  const hidden = onlyOs === "windows" ? "linux" : onlyOs === "linux" ? "windows" : undefined;   // das andere System ausblenden
   return (
     <div className="pane export-pane">
         <section className="card summary">
@@ -22,16 +23,16 @@ export function ExportPane({ s }: { s: Studio }) {
           <div className="export-col">
         <section className="card export" id="export">
           <h2>{t("Anwenden")}</h2>
-          <div className="cmd">
+          {hidden !== "windows" && <div className="cmd">
             <span>Windows</span>
             <p className="cmd-note">{isTauri
               ? t("Oben rechts auf „Anwenden“ – die App richtet alles selbst ein (Akzent, Wallpaper, Terminal, VS Code, Prompt, komorebi).")
               : t("In der Desktop-App: „Anwenden“ richtet alles selbst ein. Hier im Browser: Dateien unten speichern.")}</p>
-          </div>
-          <div className="cmd">
+          </div>}
+          {hidden !== "linux" && <div className="cmd">
             <span>Linux</span><code>{cmds.linux}</code>
             <button type="button" className="ghost" onClick={() => copy(cmds.linux)}>{t("Kopieren")}</button>
-          </div>
+          </div>}
 
         </section>
         <section className="card export">
@@ -73,7 +74,7 @@ export function ExportPane({ s }: { s: Studio }) {
             <h2>{t("Dateien")}{" "}{isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
             <span className="grow" />
             <div className="seg" role="group" aria-label={t("Dateien filtern")}>
-              {(["alle", "windows", "linux", "allgemein"] as const).map((g) => (
+              {(["alle", "windows", "linux", "allgemein"] as const).filter((g) => g !== hidden).map((g) => (
                 <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>
                   {t({ alle: "Alle", windows: "Windows", linux: "Linux", allgemein: "Allgemein" }[g])}
                 </button>
@@ -81,14 +82,14 @@ export function ExportPane({ s }: { s: Studio }) {
             </div>
           </div>
           <ul className="files">
-            {files.filter((f) => group === "alle" || f.group === group).map((f) => (
+            {files.filter((f) => f.group !== hidden && (group === "alle" || f.group === group)).map((f) => (
               <li key={f.id}>
                 <span><b>{t(f.label)}</b><small>{t(f.hint, f.vars)}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(f.text)}>{t("Kopieren")}</button>
                 <button type="button" className="ghost" onClick={() => saveFile(f.filename, f.text)}>{t("Speichern")}</button>
               </li>
             ))}
-            {prompt.enabled && (group === "alle" || group === "linux") && (
+            {prompt.enabled && hidden !== "linux" && (group === "alle" || group === "linux") && (
               <li>
                 <span><b>{t("Prompt: powerlevel10k")}</b><small>{t("nach ~/.config/theme-studio/p10k.zsh – deine .zshrc lädt sie nach ~/.p10k.zsh")}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(p10kOverlay(prompt))}>{t("Kopieren")}</button>

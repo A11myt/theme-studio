@@ -42,7 +42,7 @@ export function BackgroundSettings() {
         <span>{t("Beim Schließen im Infobereich weiterlaufen")}<small>{t("Symbol neben der Uhr: Öffnen, Theme anwenden, Automatisch einfärben, Beenden")}</small></span>
       </label>
       <label className="check">
-        <input type="checkbox" checked={autostart} disabled={!installed} onChange={(e) => void toggleAutostart(e.target.checked)} />
+        <input type="checkbox" checked={autostart} disabled={!installed && !autostart} onChange={(e) => void toggleAutostart(e.target.checked)} />
         <span>{t("Mit Windows starten (unsichtbar im Infobereich)")}
           <small>{installed ? t("startet beim Anmelden ohne Fenster") : t("nur in der installierten Version – die portable exe kann umziehen")}</small></span>
       </label>

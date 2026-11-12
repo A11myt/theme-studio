@@ -31,7 +31,7 @@ export function useStudio() {
   const [templates, setTemplates] = useState<StoredTemplate[]>([]);
   const [imageId, setImageId] = useState<string>();
   const [settings, setSettings] = useState<ThemeSettings>(DEFAULT);
-  const [os, setOs] = useState<Os>("linux");
+  const [os, setOs] = useState<Os>(() => (typeof navigator !== "undefined" && /windows/i.test(navigator.userAgent) ? "windows" : "linux"));
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
@@ -61,6 +61,8 @@ export function useStudio() {
     if (detected) setOs(resolveSystem(c, detected.system));   // Vorschau folgt
   };
   const system = resolveSystem(systemChoice, detected?.system ?? "linux");
+  // In der App nur das eigene System zeigen (unter Windows kein Linux und umgekehrt) – im Browser beide
+  const onlyOs: Os | undefined = isTauri && detected ? system : undefined;
   useEffect(() => {
     void detectSystem().then((d) => { setDetected(d); setOs(resolveSystem(loadSystemChoice(), d.system)); });
   }, []);
@@ -349,23 +351,16 @@ export function useStudio() {
 
   return {
     images,
-    setImages,
     themes,
-    setThemes,
     templates,
-    setTemplates,
     imageId,
-    setImageId,
     settings,
-    setSettings,
     os,
     setOs,
     name,
     setName,
     busy,
-    setBusy,
     toast,
-    setToast,
     wallhaven,
     setWallhaven,
     showApply,
@@ -383,23 +378,17 @@ export function useStudio() {
     bothModes,
     setBothModes,
     prompt,
-    setPromptState,
     setPrompt,
     showWizard,
     setShowWizard,
     tab,
-    setTabState,
     setTab,
     group,
     setGroup,
-    past,
-    future,
-    last,
-    restoring,
-    travel,
+    canUndo: past.current.length > 0,
+    canRedo: future.current.length > 0,
     undo,
     redo,
-    urlCache,
     urls,
     image,
     pal,
@@ -426,9 +415,8 @@ export function useStudio() {
     setSystemChoice,
     detected,
     system,
+    onlyOs,
     setSingleKeys,
-    saveOpts,
-    report,
     saveFile,
     saveVsix,
     themeName,

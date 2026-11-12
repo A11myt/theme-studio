@@ -394,6 +394,11 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .win-targets, .win-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .win-targets li { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
 .win-targets li.missing { opacity: .75; }
+.win-services { border-top: 1px solid var(--line, rgba(127,127,127,.25)); padding-top: 8px; }
+.win-services > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.win-services .win-targets { margin-top: 6px; }
+.win-services li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.win-services li > span { display: grid; gap: 2px; min-width: 0; flex: 1 1 180px; }
 .win-targets label > span, .win-results li > span:last-child { display: grid; gap: 2px; min-width: 0; }
 .win-targets small, .win-results small { color: var(--muted); font-size: .78rem; overflow-wrap: anywhere; }
 .win-results li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; background: var(--panel-2); border-radius: 8px; padding: 8px 10px; border-left: 3px solid var(--line); }

@@ -8,7 +8,7 @@ import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function FarbePane({ s }: { s: Studio }) {
-  const { settings, os, setOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages, pal } = s;
+  const { settings, os, setOs, onlyOs, setWallhaven, fonts, setTab, image, update, tune, effSource, overrideCount, bg, addImages, pal } = s;
   const fileInput = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const schemes = Object.keys(SCHEMES) as SchemeName[];
@@ -23,10 +23,10 @@ export function FarbePane({ s }: { s: Studio }) {
             title={t("wallhaven nach Bildern in der Ausgangsfarbe durchsuchen")}>
             <i className="sw inline" style={{ background: `#${nearestWallhavenColor(effSource)}` }} />{t("Passende Wallpaper suchen")}
           </button>}
-          <OsToggle os={os} onChange={setOs} />
+          {!onlyOs && <OsToggle os={os} onChange={setOs} />}
         </div>
         <div className="stage-preview">
-          {bg ? <Desktop c={pal} os={os} image={bg} size="large" fonts={fonts} /> : (
+          {bg ? <Desktop c={pal} os={onlyOs ?? os} image={bg} size="large" fonts={fonts} /> : (
             <div className={`empty-hero ${over ? "over" : ""}`}
               onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
               onDrop={(e) => { e.preventDefault(); setOver(false); const f = [...e.dataTransfer.files].filter((x) => x.type.startsWith("image/")); if (f.length) void addImages(f); }}>

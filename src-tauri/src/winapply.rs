@@ -318,15 +318,27 @@ pub fn fs_remove(session: String, path: String) -> Result<bool, String> {
     Ok(true)
 }
 
-/// Erlaubte Prozesse beenden: whkd, und pythonw nur aus %LOCALAPPDATA%\wintheme (der Farb-Wächter). → Anzahl.
+/// Erlaubte Prozesse: whkd, komorebi (+ Leiste), und pythonw nur aus %LOCALAPPDATA%\wintheme (der Farb-Wächter).
+fn allowed_proc(name: &str) -> Result<Option<String>, String> {
+    match name {
+        "whkd.exe" | "komorebi.exe" | "komorebi-bar.exe" => Ok(None),
+        "pythonw.exe" => Ok(Some(env_path("LOCALAPPDATA").unwrap_or_default().join("wintheme").to_string_lossy().to_lowercase())),
+        _ => Err(format!("nicht erlaubt: {name}")),
+    }
+}
+
+/// Erlaubte Prozesse beenden → Anzahl.
 #[tauri::command]
 pub fn stop_process(name: String) -> Result<u32, String> {
-    let prefix = match name.as_str() {
-        "whkd.exe" => None,
-        "pythonw.exe" => Some(env_path("LOCALAPPDATA").unwrap_or_default().join("wintheme").to_string_lossy().to_lowercase()),
-        _ => return Err(format!("nicht erlaubt: {name}")),
-    };
+    let prefix = allowed_proc(&name)?;
     procs(&name, prefix.as_deref(), true)
+}
+
+/// Wie viele davon laufen gerade?
+#[tauri::command]
+pub fn process_count(name: String) -> Result<u32, String> {
+    let prefix = allowed_proc(&name)?;
+    procs(&name, prefix.as_deref(), false)
 }
 
 /// Prozesse mit diesem Namen zählen bzw. beenden (optional nur aus einem Ordner).
@@ -642,12 +654,14 @@ pub struct RunResult {
     output: String,
 }
 
-/// Erlaubt sind nur komorebic (state, reload-configuration) und oh-my-posh --version.
+/// Erlaubt sind nur komorebic (state, reload-configuration, enable-autostart, start, stop) und oh-my-posh --version.
 #[tauri::command]
 pub fn run_tool(tool: String, args: Vec<String>) -> Result<RunResult, String> {
     let allowed = match tool.as_str() {
         "komorebic" => matches!(args.iter().map(String::as_str).collect::<Vec<_>>().as_slice(),
-            ["state"] | ["reload-configuration"] | ["--version"] | ["enable-autostart"] | ["enable-autostart", "--bar"]),
+            ["state"] | ["reload-configuration"] | ["--version"] | ["enable-autostart"] | ["enable-autostart", "--bar"]
+            | ["start"] | ["start", "--whkd"] | ["start", "--whkd", "--bar"]
+            | ["stop"] | ["stop", "--whkd"] | ["stop", "--bar"] | ["stop", "--whkd", "--bar"]),
         "oh-my-posh" => args == ["--version"],
         _ => false,
     };

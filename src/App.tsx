@@ -23,7 +23,7 @@ import { useBackground } from "./lib/background";
 export function App() {
   const lang = useLang();          // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
-  const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings,  prompt, setPrompt, showWizard, setShowWizard, tab, setTab, past, future, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
+  const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, canUndo, canRedo, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
 
   useBackground({ themes, lang, windows: system === "windows", fonts, prompt, flash });
 
@@ -53,8 +53,8 @@ export function App() {
         </nav>
         <span className="grow" />
         <div className="tools">
-          <button type="button" className="ghost" onClick={undo} disabled={!past.current.length} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}>↶</button>
-          <button type="button" className="ghost" onClick={redo} disabled={!future.current.length} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}>↷</button>
+          <button type="button" className="ghost" onClick={undo} disabled={!canUndo} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}>↶</button>
+          <button type="button" className="ghost" onClick={redo} disabled={!canRedo} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}>↷</button>
           <MoreMenu items={[
             { label: t("Zufälliges Theme"), hint: "Z", onSelect: surprise },
             { label: t("Theme-Datei importieren …"), onSelect: () => importInput.current?.click() },

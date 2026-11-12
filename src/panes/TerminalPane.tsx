@@ -20,10 +20,12 @@ export function TerminalPane({ s }: { s: Studio }) {
               <button type="button" className="primary" onClick={() => setTab("vorschau")}>{t("Weiter: Vorschau →")}</button>
             </div>
             <p className="empty">{prompt.enabled
-              ? t("Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh, bei zsh wahlweise powerlevel10k). Farben kommen aus dem Theme.")
+              ? s.onlyOs === "windows"
+                ? t("Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh). Farben kommen aus dem Theme.")
+                : t("Beim „Anwenden“ wird dieser Prompt in den gewählten Shells eingebunden (oh-my-posh, bei zsh wahlweise powerlevel10k). Farben kommen aus dem Theme.")
               : t("Aus: dein bisheriger Prompt bleibt. Beim „Anwenden“ wird ein früher gesetzter Studio-Prompt wieder entfernt.")}</p>
             <ShellPicker prompt={prompt} onChange={setPrompt} />
-            <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
+            <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} os={s.onlyOs} />
             {prompt.enabled && (
               <div className="prompt-summary">
                 <span className="chip">{{ lean: "Lean", classic: "Classic", rainbow: "Rainbow", pure: "Pure" }[prompt.style]}</span>

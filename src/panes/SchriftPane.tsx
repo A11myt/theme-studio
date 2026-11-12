@@ -11,7 +11,7 @@ export function SchriftPane({ s }: { s: Studio }) {
       <aside className="card mini-preview">
         <div className="section-head"><h3>{t("So sieht es im Terminal aus")}</h3>
           <button type="button" className="primary" onClick={() => setTab("terminal")}>{t("Weiter: Terminal →")}</button></div>
-        <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} />
+        <TerminalPreview c={pal} t={settings} fonts={fonts} prompt={prompt.enabled ? prompt : undefined} os={s.onlyOs} />
       </aside>
     </div>
   );
