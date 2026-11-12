@@ -17,6 +17,7 @@ export interface ShellInfo {
   notes: string[];        // erkannte Frameworks / Hinweise (übersetzt)
   p10k?: boolean;         // zsh: powerlevel10k vorhanden
   linked?: boolean;       // rc bindet den Studio-Prompt schon selbst ein (z. B. eigene dotfiles)
+  blocked?: boolean;      // Ausführungsrichtlinie (Restricted/AllSigned) lädt das Profil nicht → Prompt startet dort nicht
 }
 
 export const SHELL_LABELS: Record<ShellId, string> = {
@@ -43,10 +44,33 @@ export function rcFile(e: WinEnv, id: ShellId): string {
   }
 }
 
+// ── PowerShell-Ausführungsrichtlinie ────────────────────────────────────────
+// „Restricted“ (Standard bei Windows PowerShell 5.1) oder „AllSigned“ → das Profil wird nicht geladen, der Prompt startet nicht.
+const SCOPES = ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"];
+
+/** Ausgabe von Get-ExecutionPolicy -List → wirksame Richtlinie; managed = per Gruppenrichtlinie (Firma/Admin) vorgegeben. */
+export function effectivePolicy(output: string, fallback: string): { policy: string; scope: string; managed: boolean } | null {
+  const m = new Map(output.split(/\r?\n/).map((l) => l.trim().split("=")).filter((x) => x.length === 2 && SCOPES.includes(x[0])) as [string, string][]);
+  if (!m.size) return null;                                   // nicht lesbar → nichts behaupten
+  const scope = SCOPES.find((sc) => m.get(sc) && m.get(sc) !== "Undefined");
+  return scope ? { policy: m.get(scope)!, scope, managed: scope.endsWith("Policy") } : { policy: fallback, scope: "Standard", managed: false };
+}
+
+const POLICY_FALLBACK: Partial<Record<ShellId, string>> = { powershell: "Restricted", pwsh: "RemoteSigned" };
+
+/** Blockiert die Ausführungsrichtlinie das Profil dieser PowerShell? (Restricted/AllSigned) */
+function policyBlocks(id: ShellId, lists: Partial<Record<"powershell" | "pwsh", string>>): boolean {
+  if (id !== "powershell" && id !== "pwsh") return false;
+  const raw = lists[id];
+  const p = raw ? effectivePolicy(raw, POLICY_FALLBACK[id]!) : null;
+  return !!p && ["Restricted", "AllSigned"].includes(p.policy);
+}
+
 /** Was ist installiert, was läuft schon im Prompt? Liest nur. */
 export async function detectShells(b: Bridge, e: WinEnv): Promise<ShellInfo[]> {
   const ids: ShellId[] = win(e) ? ["pwsh", "powershell", "bash"] : ["zsh", "bash", "fish"];
   const login = (e.shell ?? "").split("/").pop() ?? "";
+  const policy = win(e) ? await b.psPolicy().catch(() => ({} as Partial<Record<"powershell" | "pwsh", string>>)) : {};
   const out: ShellInfo[] = [];
   for (const id of ids) {
     const rc = rcFile(e, id);
@@ -73,7 +97,9 @@ export async function detectShells(b: Bridge, e: WinEnv): Promise<ShellInfo[]> {
     if (id === "bash" && win(e) && found) notes.push(tr("Git Bash"));
     const linked = id === "zsh" && /theme-studio\/p10k\.zsh/.test(own);
     if (linked) notes.push(tr("lädt die Studio-Ergänzung schon selbst (eigene dotfiles) – wird nicht verändert"));
-    out.push({ id, label: SHELL_LABELS[id], found, isDefault: !!login && login === id, rc, notes, p10k, linked });
+    const blocked = found && policyBlocks(id, policy);
+    if (blocked) notes.push(tr("Ausführungsrichtlinie blockiert das Profil – der Prompt startet hier nicht (übersprungen)"));
+    out.push({ id, label: SHELL_LABELS[id], found, isDefault: !!login && login === id, rc, notes, p10k, linked, blocked });
   }
   return out;
 }
@@ -113,7 +139,7 @@ export function upsertShellBlock(text: string | null, lines: string[] | null, cr
  *  Linux = nur die Login-Shell (fremde rc-Dateien nicht ungefragt anfassen). */
 export function chosenShells(all: ShellInfo[], saved?: ShellId[]): ShellInfo[] {
   if (saved) return all.filter((s) => s.found && saved.includes(s.id));
-  const found = all.filter((s) => s.found);
+  const found = all.filter((s) => s.found && !s.blocked);   // blockierte (z. B. PS 5.1 mit Restricted) nicht vorschlagen
   if (found.some((s) => s.id === "powershell")) return found.filter((s) => s.id !== "bash");
   const login = found.filter((s) => s.isDefault);
   return login.length ? login : found.slice(0, 1);

@@ -84,11 +84,13 @@ export async function stopWhkd(b: Bridge, details: string[]): Promise<void> {
   if (n) details.push(`whkd beendet (${n})`);
 }
 
-/** Altes wintheme (Farb-Automatik per Python): aus dem Autostart und beenden. */
+/** Altes wintheme (Farb-Automatik per Python): aus dem Autostart nehmen, beenden und den Ordner beiseitelegen. */
 export async function winthemeOff(b: Bridge, e: WinEnv, session: string, details: string[]): Promise<void> {
   if (await b.remove(session, join(startupDir(e), "wintheme-watch.lnk"))) details.push("Autostart entfernt: wintheme-watch.lnk");
   const n = await b.stopProcess("pythonw.exe").catch(() => 0);
   if (n) details.push(`Farb-Automatik beendet (${n})`);
+  const moved = await b.removeWintheme().catch(() => "");
+  if (moved) details.push(`Ordner beiseitegelegt: ${moved}`);
 }
 
 /** Win-Tastenkombinationen zurück an Windows: wie vor install.ps1 (Sicherung), sonst unsere Buchstaben raus + Andocken an.

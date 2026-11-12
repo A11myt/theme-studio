@@ -11,7 +11,7 @@ import { join, type Bridge, type RegSet, type WinEnv } from "./bridge";
 import { parseJsonc, upsertBlock } from "./jsonc";
 import OMP_DEFAULT from "./ohmyposh-default.json?raw";
 import { CSS_BEGIN, CSS_END, FF_PREF_LINE, firefoxCss, firefoxProfiles, OBSIDIAN_SNIPPET, obsidianCss, obsidianVaults, upsertMarked } from "../apps";
-import { chosenShells, detectShells, initLines, promptDir, writeShells } from "../shells";
+import { chosenShells, detectShells, effectivePolicy, initLines, promptDir, writeShells } from "../shells";
 import { t as tr } from "../i18n";
 
 export type TargetId = "windows" | "terminal" | "vscode" | "ohmyposh" | "komorebi" | "obsidian" | "firefox" | "autostart" | "hotkeys";
@@ -130,16 +130,8 @@ export async function conflicts(b: Bridge, e: WinEnv): Promise<string[]> {
 
 // ── PowerShell-Ausführungsrichtlinie ────────────────────────────────────────
 // „Restricted“ (Standard bei Windows PowerShell 5.1) oder „AllSigned“ → das Profil wird nicht geladen, der Prompt startet nicht.
-
-const SCOPES = ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"];
-
-/** Ausgabe von Get-ExecutionPolicy -List → wirksame Richtlinie; managed = per Gruppenrichtlinie (Firma/Admin) vorgegeben. */
-export function effectivePolicy(output: string, fallback: string): { policy: string; scope: string; managed: boolean } | null {
-  const m = new Map(output.split(/\r?\n/).map((l) => l.trim().split("=")).filter((x) => x.length === 2 && SCOPES.includes(x[0])) as [string, string][]);
-  if (!m.size) return null;                                   // nicht lesbar → nichts behaupten
-  const scope = SCOPES.find((sc) => m.get(sc) && m.get(sc) !== "Undefined");
-  return scope ? { policy: m.get(scope)!, scope, managed: scope.endsWith("Policy") } : { policy: fallback, scope: "Standard", managed: false };
-}
+// effectivePolicy liegt in shells.ts (wird auch für „blockierte Shells überspringen“ gebraucht) und wird hier re-exportiert.
+export { effectivePolicy };
 
 export async function policyIssues(b: Bridge, e: WinEnv): Promise<string[]> {
   if (e.os !== "windows") return [];

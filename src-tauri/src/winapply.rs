@@ -318,6 +318,26 @@ pub fn fs_remove(session: String, path: String) -> Result<bool, String> {
     Ok(true)
 }
 
+/// Das alte wintheme restlos entfernen: der Ordner %LOCALAPPDATA%\wintheme wird nicht gelöscht, sondern
+/// beiseitegelegt (nach wintheme.themestudio-aus). So ist nichts verloren, aber die Farb-Automatik ist weg.
+/// Gibt den neuen Pfad zurück, oder leer, wenn es den Ordner nicht (mehr) gibt.
+#[tauri::command]
+pub fn remove_wintheme() -> Result<String, String> {
+    let dir = match env_path("LOCALAPPDATA") {
+        Some(d) => d.join("wintheme"),
+        None => return Ok(String::new()),
+    };
+    if !dir.is_dir() {
+        return Ok(String::new());
+    }
+    let backup = dir.with_file_name("wintheme.themestudio-aus");
+    if backup.exists() {
+        std::fs::remove_dir_all(&backup).map_err(|e| format!("{}: {e}", backup.display()))?;
+    }
+    std::fs::rename(&dir, &backup).map_err(|e| format!("{}: {e}", dir.display()))?;
+    Ok(backup.to_string_lossy().into_owned())
+}
+
 /// Erlaubte Prozesse: whkd, komorebi (+ Leiste), und pythonw nur aus %LOCALAPPDATA%\wintheme (der Farb-Wächter).
 fn allowed_proc(name: &str) -> Result<Option<String>, String> {
     match name {

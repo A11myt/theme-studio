@@ -50,6 +50,14 @@ function fakeWindows(files: Record<string, string>, opts: { env?: Partial<WinEnv
     regGet: async (key, name) => { const v = [...reg].reverse().find((r) => r.key === key && r.name === name)?.value ?? opts.regInit?.[name] ?? null; return v && v.kind !== "Delete" ? v : null; },
     backupFile: async (_s, p) => { calls.push(`backup ${p}`); },
     remove: async (_s, p) => { const had = fs.delete(p); if (had) calls.push(`remove ${p}`); return had; },
+    removeWintheme: async () => {
+      const dir = `${ENV.localappdata}\\wintheme`;
+      let moved = false;
+      for (const k of [...fs.keys()]) if (k === dir || k.startsWith(`${dir}\\`)) { fs.delete(k); moved = true; }
+      for (const d of [...dirs]) if (d === dir || d.startsWith(`${dir}\\`)) { dirs.delete(d); moved = true; }
+      if (moved) calls.push("remove-wintheme");
+      return moved ? `${dir}.themestudio-aus` : "";
+    },
     stopProcess: async (n) => { calls.push(`stop ${n}`); return n === "whkd.exe" ? 1 : 0; },
     processCount: async (n) => (n === "whkd.exe" ? 1 : 0),
     restartExplorer: async () => { calls.push("explorer"); },
@@ -258,6 +266,17 @@ describe("Fallstricke", () => {
     const ok = fakeWindows({}, { policy: { powershell: all("RemoteSigned"), pwsh: all("Undefined") } });
     expect((await applyAll(ok.b, { ...OPTS, only: ["ohmyposh"] })).results[0].status).toBe("ok");
   });
+  it("PowerShell 5.1 mit Restricted: als blockiert erkannt und aus dem Vorschlag genommen", async () => {
+    const { detectShells, chosenShells } = await import("../src/lib/shells");
+    const all1 = (pol: string, scope = "CurrentUser") => ["MachinePolicy", "UserPolicy", "Process", "CurrentUser", "LocalMachine"].map((k) => `${k}=${k === scope ? pol : "Undefined"}`).join("\n");
+    const w = fakeWindows({}, { policy: { powershell: all1("Restricted"), pwsh: all1("RemoteSigned") } });
+    const all = await detectShells(w.b, await w.b.env());
+    expect(all.find((s) => s.id === "powershell")?.blocked).toBe(true);
+    expect(all.find((s) => s.id === "pwsh")?.blocked).toBeFalsy();
+    const chosen = chosenShells(all).map((s) => s.id);
+    expect(chosen).toContain("pwsh");
+    expect(chosen).not.toContain("powershell");
+  });
   it("Schriftliste nicht abfragbar → Schrift trotzdem gesetzt, kein falsches „nicht installiert“", async () => {
     const w = fakeWindows({ [WT]: WT_TEXT }, { fonts: [] });
     const { results } = await applyAll(w.b, { ...OPTS, only: ["terminal"] });
@@ -412,5 +431,15 @@ describe("Hintergrund-Programme einzeln abschalten", () => {
     const { whkdAutostartOff } = await import("../src/lib/windows/services");
     const w = fakeWindows({ [`${STARTUP}\\komorebi.lnk`]: "lnk" }, { komorebi: { state: 0, reload: 2, output: "kaputt" } });
     expect(await whkdAutostartOff(w.b, await w.b.env(), "s", [])).toContain("kaputt");
+  });
+  it("altes wintheme abschalten: Autostart weg, Prozess beendet, Ordner beiseitegelegt → Status sauber", async () => {
+    const { winthemeOff, serviceStatus } = await import("../src/lib/windows/services");
+    const w = fakeWindows({ [`${STARTUP}\\wintheme-watch.lnk`]: "lnk", [`${ENV.localappdata}\\wintheme\\config.json`]: "{}" });
+    const d: string[] = [];
+    await winthemeOff(w.b, await w.b.env(), "s", d);
+    expect(w.calls).toContain("remove-wintheme");
+    expect(w.fs.has(`${STARTUP}\\wintheme-watch.lnk`)).toBe(false);
+    const st = await serviceStatus(w.b, await w.b.env());
+    expect(st.wintheme.present).toBe(false);
   });
 });

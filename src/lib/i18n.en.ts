@@ -382,6 +382,7 @@ export const EN: Record<string, string> = {
   "für jede Shell (PowerShell, bash, zsh, fish) – Farben als Platzhalter": "for any shell (PowerShell, bash, zsh, fish) – colors as placeholders",
   "keine Shell ausgewählt – im Bereich Terminal wählen": "no shell selected – choose in the Terminal section",
   "lädt die Studio-Ergänzung schon selbst (eigene dotfiles) – wird nicht verändert": "already loads the Studio overlay itself (own dotfiles) – left unchanged",
+  "Ausführungsrichtlinie blockiert das Profil – der Prompt startet hier nicht (übersprungen)": "execution policy blocks the profile – the prompt won’t start here (skipped)",
   "oh-my-bash: bleibt, nur das Theme wird überdeckt": "oh-my-bash: stays, only its theme is overridden",
   "oh-my-fish: bleibt, der Studio-Prompt ersetzt nur fish_prompt": "oh-my-fish: stays, the Studio prompt only replaces fish_prompt",
   "oh-my-zsh: bleibt, nur das Theme wird vom Studio-Prompt überdeckt": "oh-my-zsh: stays, only its theme is overridden by the Studio prompt",

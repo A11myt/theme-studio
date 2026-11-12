@@ -41,6 +41,8 @@ export interface Bridge {
   regGet(key: string, name: string): Promise<RegValue | null>;
   backupFile(session: string, path: string): Promise<void>;
   remove(session: string, path: string): Promise<boolean>;
+  /** Das alte wintheme restlos entfernen (Ordner wird beiseitegelegt). Neuer Pfad oder "" wenn nicht vorhanden. */
+  removeWintheme(): Promise<string>;
   stopProcess(name: ProcName): Promise<number>;
   processCount(name: ProcName): Promise<number>;
   restartExplorer(): Promise<void>;
@@ -70,6 +72,7 @@ export async function tauriBridge(): Promise<Bridge> {
     regGet: (key, name) => invoke("reg_get", { key, name }),
     backupFile: (session, path) => invoke("fs_backup", { session, path }),
     remove: (session, path) => invoke("fs_remove", { session, path }),
+    removeWintheme: () => invoke("remove_wintheme"),
     stopProcess: (name) => invoke("stop_process", { name }),
     processCount: (name) => invoke("process_count", { name }),
     restartExplorer: () => invoke("restart_explorer"),
