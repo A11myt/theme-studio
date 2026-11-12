@@ -12,6 +12,7 @@ function fake(files: Record<string, string>, dirs: string[] = []) {
     exists: async (p: string) => fs.has(p) || dirs.includes(p),
     read: async (p: string) => fs.get(p) ?? null,
     write: async (_s: string, p: string, text: string) => { fs.set(p, text); },
+    psPolicy: async () => ({}),
   } as unknown as Bridge;
   return { b, fs };
 }

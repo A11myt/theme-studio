@@ -327,8 +327,13 @@ async function applyOhmyposh(b: Bridge, session: string, o: ApplyOptions, e: Win
   details.push(`Theme: ${config} (${o.prompt.enabled ? "Prompt-Assistent" : "Standard-Prompt"})`);
   const all = await detectShells(b, e);
   const shells = chosenShells(all, o.prompt.shells);
-  for (const sh of all.filter((x) => !shells.includes(x))) details.push(`übersprungen: ${sh.label} (${sh.found ? "abgewählt" : "nicht installiert"})`);
-  if (!shells.length) return res("ohmyposh", "skipped", tr("keine Shell ausgewählt – im Bereich Terminal wählen"), details);
+  for (const sh of all.filter((x) => !shells.includes(x))) details.push(`übersprungen: ${sh.label} (${!sh.found ? "nicht installiert" : sh.blocked ? "Ausführungsrichtlinie" : "abgewählt"})`);
+  if (!shells.length) {
+    // nichts zu schreiben – war alles nur wegen der Ausführungsrichtlinie blockiert? Dann den Lösungsweg zeigen statt „nichts ausgewählt“.
+    const issues = await policyIssues(b, e);
+    if (issues.length) return res("ohmyposh", "warn", tr("Prompt eingerichtet, startet aber nicht: {why}", { why: issues[0] }), details);
+    return res("ohmyposh", "skipped", tr("keine Shell ausgewählt – im Bereich Terminal wählen"), details);
+  }
   const w = await writeShells(b, session, shells, { enabled: true, engine: "omp", config, p10kFile: "" });
   details.push(...w.details);
   const blocked = await policyIssues(b, e);
