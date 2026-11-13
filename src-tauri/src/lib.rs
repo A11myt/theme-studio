@@ -30,8 +30,8 @@ fn gdi_fonts() -> Vec<String> {
   use windows_sys::Win32::Foundation::LPARAM;
   use windows_sys::Win32::Graphics::Gdi::{EnumFontFamiliesExW, GetDC, ReleaseDC, DEFAULT_CHARSET, LOGFONTW, TEXTMETRICW};
   unsafe extern "system" fn each(lf: *const LOGFONTW, _tm: *const TEXTMETRICW, _ty: u32, lp: LPARAM) -> i32 {
-    let names = &mut *(lp as *mut Vec<String>);
-    let face = &(*lf).lfFaceName;
+    let names = unsafe { &mut *(lp as *mut Vec<String>) };
+    let face = unsafe { &(*lf).lfFaceName };
     let len = face.iter().position(|&c| c == 0).unwrap_or(face.len());
     let name = String::from_utf16_lossy(&face[..len]);
     if !name.is_empty() && !name.starts_with('@') { names.push(name); }   // @… = vertikale Varianten
