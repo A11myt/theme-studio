@@ -389,7 +389,9 @@ kbd { font: 500 .7rem var(--mono); border: 1px solid var(--line); border-radius:
 .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* Anwenden unter Windows */
-.sheet.win-apply { width: min(760px, 100%); }
+/* Nur 3 Reihen (Kopf, Körper, Fuß): der Körper scrollt, der Fuß mit „Anwenden“ bleibt immer sichtbar. */
+.sheet.win-apply { width: min(760px, 100%); grid-template-rows: auto 1fr auto; }
+.sheet.win-apply > .pad.form { overflow-y: auto; min-height: 0; }
 .win-summary { margin: 0; display: flex; align-items: center; gap: 6px; }
 .win-targets, .win-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .win-targets li { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
