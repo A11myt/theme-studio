@@ -164,6 +164,8 @@ export function p10kOverlay(o: PromptOptions): string {
   set("DIR_FOREGROUND", rainbow ? 0 : a(ROLE.dir));
   set("DIR_ANCHOR_FOREGROUND", rainbow ? 0 : a(ROLE.dir));
   set("DIR_SHORTENED_FOREGROUND", rainbow ? 0 : 8);
+  set("SHORTEN_STRATEGY", "''");   // voller Pfad – keine Ein-Buchstaben-Kürzung der Ordner
+  set("SHORTEN_DIR_LENGTH", 0);
   if (rainbow) set("DIR_BACKGROUND", a(RAINBOW.dir));
   for (const st of ["CLEAN", "MODIFIED", "UNTRACKED"]) {
     set(`VCS_${st}_FOREGROUND`, rainbow ? 0 : st === "CLEAN" ? a(ROLE.vcs) : a(ROLE.vcsDirty));
@@ -210,7 +212,7 @@ export function ompTemplate(o: PromptOptions): string {
   const leftSegs = [
     ...(o.lines === 2 && o.frame ? [{ type: "text", style: "plain", foreground: C(ROLE.frame), template: "╭─ " }] : []),
     { type: "path", ...pl(ROLE.dir, bgDir), template: `${pad}${ic(ICON.dir)}{{ .Path }}${pad}`,
-      properties: { style: "unique", max_depth: 4, folder_separator_icon: "/", home_icon: "~" } },
+      properties: { style: "full", folder_separator_icon: "/", home_icon: "~" } },
     { type: "git", ...pl(ROLE.vcs, bgVcs),
       ...(lean ? { foreground_templates: [`{{ if or (.Working.Changed) (.Staging.Changed) }}${C(ROLE.vcsDirty)}{{ end }}`] } : {}),
       template: `${pad || " "}${ic(ICON.branch)}{{ .HEAD }}{{ if .Working.Changed }} !{{ .Working.Modified }}{{ end }}{{ if gt .Working.Untracked 0 }} ?{{ .Working.Untracked }}{{ end }}${pad}`,
