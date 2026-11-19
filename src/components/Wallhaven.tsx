@@ -1,5 +1,6 @@
 // wallhaven-Suche als Overlay: suchen, durchblättern, Bild anklicken → wird hochgeladen und ausgewählt.
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { X } from "lucide-react";
 import { useDialog } from "../lib/useDialog";
 import { errText } from "../lib/platform";
 import { download, nearestWallhavenColor, search, WALLHAVEN_COLORS, type WallhavenItem } from "../lib/wallhaven";
@@ -75,7 +76,7 @@ export function Wallhaven({ wallpaperDir, themeColors = [], initialColor, onClos
           <input ref={input} className="name grow" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t("Suchen, z. B. mountains, cyberpunk, wow … (leer = Toplist)")} aria-label={t("Suchbegriff")} />
           <button type="submit" className="primary">{t("Suchen")}</button>
-          <button type="button" className="ghost" onClick={onClose} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </form>
         <div className="wh-colors">
           <span className="empty">{t("Farbe:")}</span>

@@ -1,6 +1,7 @@
 // Anwenden unter Windows: vorher zeigen, was gefunden wurde (und was fehlt), dann je Ziel ein klares Ergebnis.
 // Diagnose kopieren (für Hilfe), Protokolldatei, Rückgängig.
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { effectiveSource, SCHEMES, type ThemeSettings } from "../lib/color";
 import type { Fonts } from "../lib/fonts";
 import { t } from "../lib/i18n";
@@ -9,10 +10,9 @@ import type { PromptOptions } from "../lib/prompt";
 import type { StoredImage } from "../lib/store";
 import { useDialog } from "../lib/useDialog";
 import { applyAll, conflicts, detect, diagnose, LABELS, type Detection, type TargetId, type TargetResult } from "../lib/windows/apply";
-import { tauriBridge, type Bridge, type WinEnv } from "../lib/windows/bridge";
+import { tauriBridge, type Bridge } from "../lib/windows/bridge";
 import { resetAll } from "../lib/windows/reset";
 import { rememberApply } from "../lib/background";
-import { ServicesPanel } from "./ServicesPanel";
 
 // Ziele, die der Nutzer abgewählt hat – bleiben abgewählt (z. B. komorebi nie einfärben)
 const OFF_KEY = "theme-studio-win-off";
@@ -35,7 +35,6 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [bridge, setBridge] = useState<Bridge>();
-  const [env, setEnv] = useState<WinEnv>();
   const [dets, setDets] = useState<Detection[]>([]);
   const [chosen, setChosen] = useState<Set<TargetId>>(new Set());
   const [setWall, setSetWall] = useState(!!image);
@@ -57,7 +56,6 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
         const d = await detect(b, env);
         setWarnings(await conflicts(b, env));
         setBridge(b);
-        setEnv(env);
         setDets(d);
         const off = loadOff();
         setChosen(new Set(d.filter((x) => x.found && !off.includes(x.id)).map((x) => x.id)));
@@ -144,7 +142,7 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
         <div className="wh-head">
           <h2>{t("Auf diesem Rechner anwenden")}</h2>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} disabled={state === "running"} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} disabled={state === "running"} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </div>
         <div className="pad form">
           <p className="win-summary"><i className="sw inline" style={{ background: effectiveSource(settings) }} /> <b>{name}</b> · {SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")}</p>
@@ -174,8 +172,6 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
                 <span>{fonts.mono ? t("Schrift anwenden: {font} (Terminal, VS Code)", { font: fonts.mono }) : t("Keine Schrift gewählt – Schriften bleiben, wie sie sind")}</span></label>
             </>
           )}
-          {bridge && env?.os === "windows" && state !== "detecting" &&
-            <ServicesPanel bridge={bridge} env={env} busy={state === "running"} onSession={setSession} onNote={setNote} />}
 
           {state === "done" && (
             <>
@@ -200,7 +196,7 @@ export function WindowsApply({ name, settings, fonts, prompt, image, wallpaperDi
             title={t("Alle Änderungen von Theme Studio entfernen – Windows wie vorher")}>{t("Auf Standard zurücksetzen")}</button>
           {session && state !== "running" && <button type="button" className="ghost" onClick={undo}>{t("Rückgängig")}</button>}
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>
+          <button type="button" className="ghost icon" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>
           {state !== "done" && <button type="button" className="primary" onClick={run} disabled={state !== "ready" || !chosen.size}>
             {state === "running" ? t("Wird angewendet …") : t("Anwenden")}</button>}
           {state === "done" && <button type="button" className="primary" onClick={() => { setResults([]); setState("ready"); }}>{t("Nochmal")}</button>}

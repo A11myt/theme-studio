@@ -26,6 +26,7 @@
     "@tauri-apps/plugin-updater": "2.14.1",
     "fflate": "0.8.3",
     "idb-keyval": "6.2.2",
+    "lucide-react": "^1.76.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },

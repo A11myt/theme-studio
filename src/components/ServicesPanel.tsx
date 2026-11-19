@@ -1,7 +1,6 @@
 // „Hintergrund-Programme“ im Anwenden-Dialog (Windows): Autostart und Dienste einzeln abschalten –
 // Theme Studio selbst, Farb-Automatik, komorebi, whkd, altes wintheme, Win-Tastenkombinationen.
 import { useCallback, useEffect, useState } from "react";
-import { loadAuto, storeAuto } from "../lib/background";
 import { t } from "../lib/i18n";
 import { errText } from "../lib/platform";
 import { stamp } from "../lib/windows/apply";
@@ -18,15 +17,10 @@ interface Props {
 
 export function ServicesPanel({ bridge: b, env: e, busy, onSession, onNote }: Props) {
   const [st, setSt] = useState<ServiceStatus>();
-  const [studio, setStudio] = useState(false);
-  const [auto, setAuto] = useState(() => loadAuto().enabled);
   const [working, setWorking] = useState("");
 
   const refresh = useCallback(async () => {
     setSt(await serviceStatus(b, e).catch(() => undefined));
-    const { invoke } = await import("@tauri-apps/api/core");
-    setStudio(await invoke<boolean>("autostart_get").catch(() => false));
-    setAuto(loadAuto().enabled);
   }, [b, e]);
   useEffect(() => { void refresh(); }, [refresh]);
   // Status alle 5 Sekunden aktualisieren (solange kein Vorgang läuft)
@@ -53,17 +47,6 @@ export function ServicesPanel({ bridge: b, env: e, busy, onSession, onNote }: Pr
     setWorking("");
   };
 
-  const studioOff = async () => {
-    setWorking("studio");
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("autostart_set", { on: false });
-      onNote(t("Theme Studio startet nicht mehr mit Windows"));
-    } catch (err) { onNote(errText(err)); }
-    await refresh();
-    setWorking("");
-  };
-  const autoOff = () => { storeAuto({ ...loadAuto(), enabled: false }); setAuto(false); onNote(t("Automatisch einfärben: aus")); };
 
   const dis = busy || !!working;
   const state = (running: boolean, autostart: boolean) =>
@@ -73,14 +56,7 @@ export function ServicesPanel({ bridge: b, env: e, busy, onSession, onNote }: Pr
     <details className="win-services">
       <summary>{t("Hintergrund-Programme und Autostart")}</summary>
       <ul className="win-targets">
-        <li>
-          <span><b>Theme Studio</b><small>{studio ? t("startet mit Windows") : t("kein Autostart")}</small></span>
-          <button type="button" className="ghost" disabled={dis || !studio} onClick={studioOff}>{t("Autostart aus")}</button>
-        </li>
-        <li>
-          <span><b>{t("Automatisch einfärben")}</b><small>{auto ? t("an – färbt bei jedem Wallpaper-Wechsel ein") : t("aus")}</small></span>
-          <button type="button" className="ghost" disabled={dis || !auto} onClick={autoOff}>{t("Ausschalten")}</button>
-        </li>
+        {!st && <li role="status">{t('Dienststatus nicht verfügbar.')}</li>}
         {st?.komorebi.installed && (
           <li>
             <span><b>komorebi</b><small>{state(st.komorebi.running, st.komorebi.autostart)}</small></span>

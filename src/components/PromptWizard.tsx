@@ -1,5 +1,6 @@
 // Prompt-Assistent wie `p10k configure`: eine Frage pro Schritt, jede Antwort mit Live-Vorschau im Theme.
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useDialog } from "../lib/useDialog";
 import type { Palette } from "../lib/color";
 import { cssFont, type Fonts } from "../lib/fonts";
@@ -95,7 +96,7 @@ export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
         <div className="wh-head">
           <h2>{t("Prompt-Assistent")}{" "}<small>{done ? "Fertig" : t("Schritt {i} von {n}", { i: i + 1, n: visible.length })}</small></h2>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </div>
         <div className="wiz-progress"><i style={{ width: `${(Math.min(i, visible.length) / visible.length) * 100}%` }} /></div>
         <div className="pad">

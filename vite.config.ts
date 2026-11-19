@@ -13,6 +13,7 @@ export default defineConfig({
   base: process.env.VITE_BASE ?? "/",
   plugins: [react()],
   clearScreen: false,
-  server: { port: 5173, strictPort: true, proxy: wallhaven },
+  // PORT kommt von Vorschau-Umgebungen (z. B. v0); Tauri nutzt weiterhin 5173
+  server: { host: true, port: Number(process.env.PORT) || 5173, strictPort: true, proxy: wallhaven },
   preview: { port: 4173, proxy: wallhaven },
 });

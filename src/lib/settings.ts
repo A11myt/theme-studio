@@ -4,6 +4,7 @@ import { isTauri } from "./platform";
 export interface AppSettings {
   wallpaperDir: string;   // wallhaven-Bilder landen hier (auch für wintheme/wallthemes nutzbar)
   exportDir: string;      // „Herunterladen“ schreibt hierhin …
+  hiddenExports?: string[];
   askOnSave: boolean;     // … oder fragt jedes Mal per Dialog
 }
 

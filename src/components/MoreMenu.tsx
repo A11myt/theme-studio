@@ -1,5 +1,6 @@
 // ⋯-Menü in der Kopfzeile: seltene Aktionen (Zufall, Import, Link teilen) aus dem Weg, aber per Tastatur voll bedienbar.
 import { useEffect, useRef, useState } from "react";
+import { Ellipsis } from "lucide-react";
 import { t } from "../lib/i18n";
 
 export interface MenuItem { label: string; hint?: string; onSelect: () => void }
@@ -30,7 +31,7 @@ export function MoreMenu({ items, label }: { items: MenuItem[]; label?: string }
   return (
     <div className="more" ref={wrap}>
       <button ref={btn} type="button" className="ghost icon" aria-haspopup="menu" aria-expanded={open}
-        aria-label={label ?? t("Weitere Aktionen")} title={label ?? t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}>⋯</button>
+        aria-label={label ?? t("Weitere Aktionen")} title={label ?? t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}><Ellipsis size={16} aria-hidden="true" /></button>
       {open && (
         <div className="more-menu" role="menu" onKeyDown={onKey}>
           {items.map((it, i) => (

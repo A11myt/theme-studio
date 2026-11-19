@@ -1,13 +1,19 @@
 // Einstellungen der App (pro Rechner): Speicherorte für Wallpaper und Exporte.
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useDialog } from "../lib/useDialog";
 import { isTauri } from "../lib/platform";
 import { pickFolder, type AppSettings } from "../lib/settings";
 import { setLang, t, useLang } from "../lib/i18n";
 import type { Detected, SystemChoice } from "../lib/system";
-import { BackgroundSettings } from "./BackgroundSettings";
+import { SystemSettings } from './SystemSettings';
+
+import { ExportVisibility, compactHidden } from './ExportVisibility';
+
+const tabs = ['general', 'exports', 'background'] as const;
 
 interface Props {
+  initialExports: boolean;
   value: AppSettings;
   singleKeys: boolean;
   onSingleKeys: (on: boolean) => void;
@@ -18,10 +24,11 @@ interface Props {
   onClose: () => void;
 }
 
-export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detected, onSystem, onSave, onClose }: Props) {
+export function SettingsDialog({ initialExports, value, singleKeys, onSingleKeys, system, detected, onSystem, onSave, onClose }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [s, setS] = useState(value);
+  const [tab, setTab] = useState(initialExports ? 'exports' : 'general');
   const lang = useLang();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -42,8 +49,18 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detect
         <div className="wh-head">
           <h2>{t("Einstellungen")}</h2>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </div>
+        <div className="settings-tabs" role="tablist" aria-label={t('Einstellungen')}>
+          {tabs.map(id => <button key={id} type="button" role="tab" id={`option-${id}`} aria-selected={tab === id} tabIndex={tab === id ? 0 : -1} aria-controls="options-panel" onClick={() => setTab(id)} onKeyDown={e => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+            e.preventDefault();
+            const next = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(tabs.indexOf(id) + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+            setTab(next); document.getElementById(`option-${next}`)?.focus();
+          }}>{id === 'general' ? t('Allgemein') : id === 'exports' ? t('Angezeigte Exporte') : t('Autostart & Dienste')}</button>)}
+        </div>
+        <div role="tabpanel" id="options-panel" aria-labelledby={`option-${tab}`} className="settings-content">
+        {tab === 'background' ? (isTauri && detected?.system === 'windows' ? <SystemSettings /> : <p className="hint pad">{t('Autostart, Infobereich und Hintergrunddienste lassen sich in der Windows-Desktop-App verwalten.')}</p>) : tab === 'exports' ? <ExportVisibility hidden={s.hiddenExports ?? compactHidden} change={hiddenExports => setS(prev => ({ ...prev, hiddenExports }))}/> : <>
         {!isTauri ? (
           <p className="empty pad">{t("Speicherorte gibt es in der Desktop-App. Im Browser landen Dateien im Download-Ordner des Browsers.")}</p>
         ) : (
@@ -93,11 +110,12 @@ export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detect
             <span>{t("Einzeltasten-Kürzel (1–9 Variante, D/H dunkel/hell, Z Zufall, B Seitenleiste)")}<small>{" "}{t("– ausschalten, falls du Spracheingabe oder einen Screenreader nutzt")}</small></span>
           </label>
         </div>
-        {isTauri && (system === "windows" || (system === "auto" && detected?.system === "windows")) && <BackgroundSettings />}
+        </>}
+        </div>
         <div className="wh-foot">
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose}>{isTauri ? t("Abbrechen") : t("Schließen")}</button>
-          {isTauri && <button type="button" className="primary" onClick={() => { onSave(s); onClose(); }}>{t("Übernehmen")}</button>}
+          <button type="button" className="ghost" onClick={onClose}>{t("Schließen")}</button>
+          <button type="button" className="primary" onClick={() => { onSave(s); onClose(); }}>{t("Übernehmen")}</button>
         </div>
       </div>
     </div>

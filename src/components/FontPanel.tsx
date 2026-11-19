@@ -1,6 +1,7 @@
 // Schriften: Oberfläche, Mono (Terminal & Code), Akzent – je eine Auswahl mit Probezeile, dazu die Größen.
 // Leer = Standard: die Programme behalten ihre Schrift. Nerd Fonts werden beim Auswählen installiert (App).
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { cssFont, type Fonts } from "../lib/fonts";
 import { systemFonts } from "../lib/platform";
 import { FontPicker } from "./FontPicker";
@@ -28,10 +29,7 @@ export function FontPanel({ fonts, onChange, refreshKey, onInstalled }: Props) {
   const known = new Set(installed);
 
   return (
-    <section className="card fonts">
-      <div className="fonts-head">
-        <h2>{t("Schrift")}<small>{t("leer = bleibt, wie es ist")}</small></h2>
-      </div>
+    <div className="fonts">
       <div className="font-rows">
         {ROLES.map((r) => {
           const v = fonts[r.key];
@@ -43,7 +41,7 @@ export function FontPanel({ fonts, onChange, refreshKey, onInstalled }: Props) {
                   <span style={v ? { fontFamily: cssFont(v, r.fallback) } : undefined}>{v || t("Standardschrift")}</span>
                   <small>{t("ändern")}</small>
                 </button>
-                {v && <button type="button" className="ghost icon" onClick={() => set({ [r.key]: "" } as Partial<Fonts>)} aria-label={t("Zurück auf Standard")} title={t("Zurück auf Standard")}>✕</button>}
+                {v && <button type="button" className="ghost icon" onClick={() => set({ [r.key]: "" } as Partial<Fonts>)} aria-label={t("Zurück auf Standard")} title={t("Zurück auf Standard")}><X size={16} aria-hidden="true" /></button>}
               </div>
               <p className="sample" style={{ fontFamily: cssFont(v, r.fallback) }}>{t(r.sample)}</p>
               {v && installed.length > 0 && !known.has(v) && <small className="warn">{t("nicht installiert – Vorschau mit Ersatzschrift")}</small>}
@@ -60,6 +58,6 @@ export function FontPanel({ fonts, onChange, refreshKey, onInstalled }: Props) {
       {picking && <FontPicker role={picking} title={t("{role}-Schrift wählen", { role: t(ROLES.find((r) => r.key === picking)!.label) })}
         installed={installed} onPick={(f) => set({ [picking]: f } as Partial<Fonts>)}
         onInstalled={() => { void systemFonts().then(setInstalled); onInstalled(); }} onClose={() => setPicking(undefined)} />}
-    </section>
+    </div>
   );
 }
