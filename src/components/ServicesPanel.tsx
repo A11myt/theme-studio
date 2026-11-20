@@ -47,7 +47,6 @@ export function ServicesPanel({ bridge: b, env: e, busy, onSession, onNote }: Pr
     setWorking("");
   };
 
-
   const dis = busy || !!working;
   const state = (running: boolean, autostart: boolean) =>
     [running ? t("läuft") : t("läuft nicht"), autostart ? t("startet mit Windows") : t("kein Autostart")].join(" · ");

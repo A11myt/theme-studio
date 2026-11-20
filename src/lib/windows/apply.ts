@@ -89,13 +89,20 @@ export function komorebiDir(e: WinEnv): string {
 
 export async function detect(b: Bridge, e: WinEnv): Promise<Detection[]> {
   const exists = async (ps: string[]) => (await Promise.all(ps.map(async (p) => ((await b.exists(p)) ? p : null)))).filter(Boolean) as string[];
-  const wt = await exists(terminalCandidates(e));
-  const vs = await exists(vscodeCandidates(e).map((c) => c.dir));
   const kd = komorebiDir(e);
-  const vaults = await exists(obsidianVaults((await b.read(join(e.appdata, "obsidian", "obsidian.json")).catch(() => null)) ?? ""));
   const ffBase = join(e.appdata, "Mozilla", "Firefox");
-  const ffProfiles = await exists(firefoxProfiles((await b.read(join(ffBase, "profiles.ini")).catch(() => null)) ?? "", ffBase, "\\"));
-  const kfiles = await exists([join(kd, "komorebi.json"), join(kd, "komorebi.bar.json"), ...[1, 2, 3].map((i) => join(kd, `komorebi.bar.${i}.json`))]);
+  // Unabhängige Prüfungen parallel statt nacheinander (spart IPC-Runden beim Öffnen des Dialogs).
+  const [wt, vs, kfiles, obsJson, ffIni] = await Promise.all([
+    exists(terminalCandidates(e)),
+    exists(vscodeCandidates(e).map((c) => c.dir)),
+    exists([join(kd, "komorebi.json"), join(kd, "komorebi.bar.json"), ...[1, 2, 3].map((i) => join(kd, `komorebi.bar.${i}.json`))]),
+    b.read(join(e.appdata, "obsidian", "obsidian.json")).catch(() => null),
+    b.read(join(ffBase, "profiles.ini")).catch(() => null),
+  ]);
+  const [vaults, ffProfiles] = await Promise.all([
+    exists(obsidianVaults(obsJson ?? "")),
+    exists(firefoxProfiles(ffIni ?? "", ffBase, "\\")),
+  ]);
   return [
     { id: "windows", label: LABELS.windows, found: e.os === "windows", where: e.windowsBuild ? [e.windowsBuild] : [],
       hint: e.os === "windows" ? undefined : tr("nur unter Windows") },
