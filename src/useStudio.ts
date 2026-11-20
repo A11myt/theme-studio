@@ -40,7 +40,7 @@ export function useStudio() {
   const [editRole, setEditRole] = useState<string>();
   const [fonts, setFonts] = useState<Fonts>(DEFAULT_FONTS);
   const [app, setApp] = useState<AppSettings>({ wallpaperDir: "", exportDir: "", askOnSave: false });
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState<boolean | "exports">(false);
   const [fontsKey, setFontsKey] = useState(0);
   const [bothModes, setBothModes] = useState(false);
   // Prompt (Assistent): gilt für den Rechner, nicht pro Theme – gemerkt im Browser-Speicher der App
@@ -67,7 +67,11 @@ export function useStudio() {
     void detectSystem().then((d) => { setDetected(d); setOs(resolveSystem(loadSystemChoice(), d.system)); });
   }, []);
   // Seitenleiste (Bilder, Themes, Vorlagen) ein-/ausblenden – mehr Platz für die Vorschau
-  const [libOpen, setLibOpenState] = useState(() => { try { return localStorage.getItem("theme-studio-lib") !== "0"; } catch { return true; } });
+  const [libOpen, setLibOpenState] = useState(() => {
+    const defaultOpen = window.matchMedia('(max-width: 900px)').matches;
+    try { const saved = localStorage.getItem('theme-studio-lib'); return saved === null ? defaultOpen : saved === '1'; }
+    catch { return defaultOpen; }
+  });
   const setLibOpen = (on: boolean) => { setLibOpenState(on); try { localStorage.setItem("theme-studio-lib", on ? "1" : "0"); } catch { /* egal */ } };
   const [tab, setTabState] = useState<Tab>(() => {
     try { const t = localStorage.getItem("theme-studio-tab"); if (t && TAB_IDS.includes(t as Tab)) return t as Tab; } catch { /* egal */ }

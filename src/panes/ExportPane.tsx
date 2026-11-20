@@ -1,4 +1,7 @@
 import { useRef } from "react";
+import { SlidersHorizontal } from 'lucide-react';
+import { compactHidden } from '../components/ExportVisibility';
+import { StepNav, STEPS } from "../components/StepLayout";
 import { SCHEMES } from "../lib/color";
 import { renderTemplate } from "../lib/exporters";
 import { ompTemplate, p10kOverlay } from "../lib/prompt";
@@ -11,17 +14,27 @@ export function ExportPane({ s }: { s: Studio }) {
   const tplInput = useRef<HTMLInputElement>(null);
   const { prompt, templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, onlyOs } = s;
   const hidden = onlyOs === "windows" ? "linux" : onlyOs === "linux" ? "windows" : undefined;   // das andere System ausblenden
+  const visible = (id: string) => !(app.hiddenExports ?? compactHidden).includes(id);
+  const filter = group === hidden ? 'alle' : group;
+  const listed = files.filter(f => visible(f.id) && f.group !== hidden && (filter === 'alle' || filter === f.group));
+  const showP10k = visible('prompts') && prompt.enabled && hidden !== 'linux' && (filter === 'alle' || filter === 'linux');
+  const showOmp = visible('prompts') && prompt.enabled && filter !== 'linux';
+  const showTemplates = visible('templates') && (filter === 'alle' || filter === 'linux');
+  const count = listed.length + Number(showP10k) + Number(showOmp) + (showTemplates ? templates.length : 0);
+  const hasPanels = visible('vscode') || visible('apply') || visible('templates');
   return (
     <div className="pane export-pane">
         <section className="card summary">
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
-          <span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
+          <span className="sum-text"><span className="eyebrow">{t("Schritt {n} von {total}", { n: STEPS.length, total: STEPS.length })}</span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
           <span className="grow" />
+          <button type="button" className="ghost" onClick={() => s.setShowSettings('exports')}><SlidersHorizontal size={15} aria-hidden="true"/>{t('Ansicht anpassen')}</button>
+          <StepNav s={s} step="export" />
           {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>{t("Anwenden")}</button>}
         </section>
-        <div className="export-grid">
-          <div className="export-col">
-        <section className="card export" id="export">
+        <div className={`export-grid${hasPanels ? '' : ' files-only'}`}>
+          {hasPanels && <div className="export-col">
+        {visible('apply') && <section className="card export" id="export">
           <h2>{t("Anwenden")}</h2>
           {hidden !== "windows" && <div className="cmd">
             <span>Windows</span>
@@ -34,8 +47,8 @@ export function ExportPane({ s }: { s: Studio }) {
             <button type="button" className="ghost" onClick={() => copy(cmds.linux)}>{t("Kopieren")}</button>
           </div>}
 
-        </section>
-        <section className="card export">
+        </section>}
+        {visible('vscode') && <section className="card export">
           <h2>VS Code</h2>
           <ul className="files">
             <li>
@@ -53,8 +66,8 @@ export function ExportPane({ s }: { s: Studio }) {
             </li>
           </ul>
 
-        </section>
-        <section className="card export">
+        </section>}
+        {visible('templates') && <section className="card export">
           <div className="detail-head">
             <h2>{t("Eigene Vorlagen")}<small>{t("deine Konfig-Dateien mit Platzhaltern wie {{colors.primary.default.hex}} – werden mit dem Theme ausgefüllt")}</small></h2>
             <span className="grow" />
@@ -67,43 +80,44 @@ export function ExportPane({ s }: { s: Studio }) {
                 <li key={tpl.id}><span><b><code>{tpl.name}</code></b><small>→ {tpl.output}</small></span>
                   <button type="button" className="ghost" onClick={() => deleteTemplate(tpl.id)} aria-label={t("{name} entfernen", { name: tpl.name })}>{t("Entfernen")}</button></li>
               ))}</ul>}
-        </section>
-          </div>
+        </section>}
+          </div>}
         <section className="card export files-card">
           <div className="detail-head">
             <h2>{t("Dateien")}{" "}{isTauri && app.exportDir && !app.askOnSave && <small>→ {app.exportDir}</small>}</h2>
             <span className="grow" />
             <div className="seg" role="group" aria-label={t("Dateien filtern")}>
               {(["alle", "windows", "linux", "allgemein"] as const).filter((g) => g !== hidden).map((g) => (
-                <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>
+                <button key={g} type="button" aria-pressed={filter === g} onClick={() => setGroup(g)}>
                   {t({ alle: "Alle", windows: "Windows", linux: "Linux", allgemein: "Allgemein" }[g])}
                 </button>
               ))}
             </div>
           </div>
           <ul className="files">
-            {files.filter((f) => f.group !== hidden && (group === "alle" || f.group === group)).map((f) => (
+            {!count && <li><span>{t('Für diese Auswahl sind keine Dateien sichtbar.')}</span><button type="button" className="ghost" onClick={() => s.setShowSettings('exports')}>{t('Ansicht anpassen')}</button></li>}
+            {listed.map((f) => (
               <li key={f.id}>
                 <span><b>{t(f.label)}</b><small>{t(f.hint, f.vars)}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(f.text)}>{t("Kopieren")}</button>
                 <button type="button" className="ghost" onClick={() => saveFile(f.filename, f.text)}>{t("Speichern")}</button>
               </li>
             ))}
-            {prompt.enabled && hidden !== "linux" && (group === "alle" || group === "linux") && (
+            {showP10k && (
               <li>
                 <span><b>{t("Prompt: powerlevel10k")}</b><small>{t("nach ~/.config/theme-studio/p10k.zsh – deine .zshrc lädt sie nach ~/.p10k.zsh")}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(p10kOverlay(prompt))}>{t("Kopieren")}</button>
                 <button type="button" className="ghost" onClick={() => saveFile("p10k.zsh", p10kOverlay(prompt))}>{t("Speichern")}</button>
               </li>
             )}
-            {prompt.enabled && group !== "linux" && (
+            {showOmp && (
               <li>
                 <span><b>{t("Prompt: oh-my-posh")}</b><small>{t("für jede Shell (PowerShell, bash, zsh, fish) – Farben als Platzhalter")}</small></span>
                 <button type="button" className="ghost" onClick={() => copy(ompTemplate(prompt))}>{t("Kopieren")}</button>
                 <button type="button" className="ghost" onClick={() => saveFile("ohmyposh.studio.json", ompTemplate(prompt))}>{t("Speichern")}</button>
               </li>
             )}
-            {(group === "alle" || group === "linux") && templates.map((tpl) => {
+            {showTemplates && templates.map((tpl) => {
               const out = () => renderTemplate(tpl.text, settings, image?.name, fonts);
               return (
                 <li key={tpl.id}>

@@ -1,5 +1,6 @@
 // Seitenleiste: nur das Ausgangsmaterial – Bilder hochladen, auswählen, wallhaven. (Themes → Sammlung, Vorlagen → Export)
 import { useRef, useState, type DragEvent } from "react";
+import { X } from "lucide-react";
 import { hasWallhaven } from "../lib/platform";
 import type { StoredImage } from "../lib/store";
 import { t } from "../lib/i18n";
@@ -54,7 +55,7 @@ export function Library(p: Props) {
                 <img src={p.urls[i.id]} alt="" />
                 <span className="dots">{i.sources.map((s) => <i key={s} style={{ background: s }} />)}</span>
               </button>
-              <button type="button" className="x" aria-label={`${i.name} entfernen`} onClick={() => p.onDeleteImage(i.id)}>✕</button>
+              <button type="button" className="x" aria-label={`${i.name} entfernen`} onClick={() => p.onDeleteImage(i.id)}><X size={16} aria-hidden="true" /></button>
             </li>
           ))}
         </ul>

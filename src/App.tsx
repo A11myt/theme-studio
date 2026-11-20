@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
+import { Archive, Download, Images, Monitor, Palette, Redo2, Settings, SquareTerminal, Type, Undo2 } from "lucide-react";
 import { ApplyDialog } from "./components/ApplyDialog";
 import { WindowsApply } from "./components/WindowsApply";
 import { Library } from "./components/Library";
@@ -20,12 +21,17 @@ import { useStudio } from "./useStudio";
 import { t, useLang } from "./lib/i18n";
 import { useBackground } from "./lib/background";
 
+const areaIcons = { farbe: Palette, schrift: Type, terminal: SquareTerminal, vorschau: Monitor, export: Download, sammlung: Archive };
+
 export function App() {
   const lang = useLang();          // Sprachwechsel → alles neu zeichnen
   const s = useStudio();
   const { images, themes, imageId, settings, name, setName, busy, toast, wallhaven, setWallhaven, showApply, setShowApply, fonts, app, setApp, showSettings, setShowSettings, prompt, setPrompt, showWizard, setShowWizard, tab, setTab, canUndo, canRedo, undo, redo, urls, image, pal, flash, selectImage, addImages, deleteImage, saveTheme, importTheme, surprise, addTemplates, effSource, importInput, TABS, singleKeys, setSingleKeys, themeName, shareTheme, libOpen, setLibOpen, systemChoice, setSystemChoice, detected, system } = s;
 
   useBackground({ themes, lang, windows: system === "windows", fonts, prompt, flash });
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 900px)').matches) window.scrollTo(0, 0);
+  }, [tab]);
 
   return (
     <div className={`app ${libOpen ? "" : "lib-closed"}`} style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
@@ -43,18 +49,21 @@ export function App() {
             setTab(id);
             requestAnimationFrame(() => document.getElementById(`tab-${id}`)?.focus());
           }}>
-          {TABS.map(([id, label], i) => (
-            <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
+          {TABS.map(([id, label], i) => {
+            const Icon = areaIcons[id];
+            return <button key={id} id={`tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="bereich"
               className={id === "sammlung" ? "tab-lib" : ""}
               tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>
+              <Icon className="area-icon" size={18} aria-hidden="true" />
               {id !== "sammlung" && <span className="step" aria-hidden="true">{i + 1}</span>}{t(label)}
               {id === "sammlung" && themes.length > 0 && <span className="count" aria-label={t("{n} gespeichert", { n: themes.length })}>{themes.length}</span>}</button>
-          ))}
+          })}
         </nav>
         <span className="grow" />
         <div className="tools">
-          <button type="button" className="ghost" onClick={undo} disabled={!canUndo} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}>↶</button>
-          <button type="button" className="ghost" onClick={redo} disabled={!canRedo} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}>↷</button>
+          <button type="button" className="ghost icon library-trigger" aria-pressed={libOpen} aria-label={t('Bildbibliothek')} title={`${t('Bildbibliothek')}${singleKeys ? ' (B)' : ''}`} onClick={() => setLibOpen(!libOpen)}><Images size={17} aria-hidden="true" /></button>
+          <button type="button" className="ghost icon" onClick={undo} disabled={!canUndo} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}><Undo2 size={16} aria-hidden="true" /></button>
+          <button type="button" className="ghost icon" onClick={redo} disabled={!canRedo} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}><Redo2 size={16} aria-hidden="true" /></button>
           <MoreMenu items={[
             { label: t("Zufälliges Theme"), hint: "Z", onSelect: surprise },
             { label: t("Theme-Datei importieren …"), onSelect: () => importInput.current?.click() },
@@ -63,11 +72,14 @@ export function App() {
           ]} />
           <input ref={importInput} type="file" accept=".json,application/json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importTheme(f); e.target.value = ""; }} />
+          <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label={t("Einstellungen")} title={t("Einstellungen")}><Settings size={16} aria-hidden="true" /></button>
         </div>
-        <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label={t("Einstellungen")} title={t("Einstellungen")}>⚙</button>
+        <span className="top-sep" aria-hidden="true" />
+        <div className="project-actions"><span className="theme-swatch" style={{ background: pal.primary }} aria-hidden="true" />
         <input className="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Name des Themes")} aria-label={t("Name des Themes")} />
         <button type="button" className={isTauri ? "ghost" : "primary"} onClick={saveTheme} title={t("Im Studio speichern (Strg+S)")}>{t("Speichern")}</button>
         {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)} title={t("Auf diesem Rechner anwenden ({sys})", { sys: system === "windows" ? "Windows" : "Linux" })}>{t("Anwenden")}</button>}
+        </div>
       </header>
 
       {libOpen && <Library images={images} urls={urls} selectedImage={imageId} busy={busy}
@@ -91,7 +103,7 @@ export function App() {
       {showApply && (system === "windows"
         ? <WindowsApply name={themeName} settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />
         : <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />)}
-      {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys}
+      {showSettings && <SettingsDialog initialExports={showSettings === "exports"} value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys}
         system={systemChoice ?? "auto"} detected={detected} onSystem={setSystemChoice} onClose={() => setShowSettings(false)}
         onSave={(s) => { setApp(s); storeSettings(s); flash(t("Einstellungen gespeichert")); }} />}
       {isTauri && systemChoice === null && <FirstRun detected={detected} onChoose={setSystemChoice} />}

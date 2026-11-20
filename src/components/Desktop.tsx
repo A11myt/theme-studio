@@ -32,15 +32,16 @@ export function Desktop({ c, os, image, size = "small", fonts }: Props) {
       <div className="tiles">
         <div className="win focused">
           {os === "windows" && <div className="tabs"><span className="tab on">pwsh</span><span className="tab">+</span></div>}
+          {size === 'large' && <span className="sample-label">{t('Terminal')}</span>}
           <div className="term">
-            <span className="l1">{os === "linux" ? "╭─ ~/dotfiles  main" : "╭─ ~\\dotfiles  main"}</span>
-            <span className="l2">╰─❯ <b>{t("wallthemes")}</b> ✓</span>
+            <span className="l1">{os === 'linux' ? '~/dotfiles' : '~\\dotfiles'} <b>main</b></span>
+            <span className="l2">{os === 'linux' ? '$' : '>'} <b>{t("wallthemes")}</b></span>
             <span className="l3">{t("3 Dateien eingefärbt")}</span>
           </div>
           <span className="btn">{t("Öffnen")}</span>
         </div>
         <div className="win">
-          <div className="lines"><i style={{ width: "70%" }} /><i style={{ width: "45%" }} /><i style={{ width: "60%" }} /></div>
+          {size === 'large' ? <div className="desk-specimen"><span className="sample-label">{t('Schrift')}</span><strong>Aa</strong><span className="sample-glyphs">0123456789</span><div className="sample-colors">{[c.primary, c.secondary, c.tertiary].map((tone, i) => <div key={i}><i style={{ background: tone }} /><code>{tone.toUpperCase()}</code></div>)}</div></div> : <div className="lines"><i style={{ width: '70%' }} /><i style={{ width: '45%' }} /><i style={{ width: '60%' }} /></div>}
         </div>
       </div>
     </div>

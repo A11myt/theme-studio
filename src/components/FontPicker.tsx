@@ -1,6 +1,7 @@
 // Schrift wählen: installierte Schriften und Nerd Fonts in einer Liste. Eine Nerd Font, die noch fehlt,
 // wird beim Auswählen direkt installiert (nur App). „Standard“ = leer → die Schrift bleibt, wie sie ist.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useDialog } from "../lib/useDialog";
 import { cssFont } from "../lib/fonts";
 import { errText, installNerdFont, isTauri, nerdFonts, type NerdFont } from "../lib/platform";
@@ -60,7 +61,7 @@ export function FontPicker({ role, title, installed, onPick, onInstalled, onClos
         <div className="wh-head">
           <h2>{title}</h2>
           <input className="name grow" autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Schrift suchen …")} aria-label={t("Schrift suchen")} />
-          <button type="button" className="ghost icon" onClick={onClose} disabled={!!busy} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} disabled={!!busy} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </div>
         <div className="fp-body">
           {error && <p className="error">{error}</p>}

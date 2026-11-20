@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { OsToggle } from "../components/OsToggle";
+import { StepHead, StepNav } from "../components/StepLayout";
 
 type View = "desktop" | "apps" | "palette";
 import { AppPreviews } from "../components/AppPreviews";
@@ -12,23 +14,24 @@ import { PALETTE_GROUPS, type Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function VorschauPane({ s }: { s: Studio }) {
-  const { settings, os, setOs, onlyOs, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, setTab, pal, copy, setOverride, bg } = s;
+  const { settings, os, setOs, onlyOs, editRole, setEditRole, fonts, bothModes, setBothModes, prompt, pal, copy, setOverride, bg } = s;
   const [view, setViewState] = useState<View>(() => { try { return (localStorage.getItem("theme-studio-preview") as View) || "desktop"; } catch { return "desktop"; } });
   const setView = (v: View) => { setViewState(v); try { localStorage.setItem("theme-studio-preview", v); } catch { /* egal */ } };
   return (
     <div className="pane vorschau-pane">
-        <section className="card detail" id="vorschau">
+        <section className="card detail" id="vorschau" aria-labelledby="step-vorschau-title">
+          <StepHead step="vorschau" hint={t("Alles zusammen prüfen: Desktop, Programme und Lesbarkeit. Farben lassen sich hier einzeln anpassen.")}
+            aside={<StepNav s={s} step="vorschau" />} />
           <div className="detail-head">
-            <h2>{t("Vorschau")}{" "}<small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")}</small></h2>
             <div className="seg" role="tablist" aria-label={t("Ansicht")}>
               {([["desktop", t("Desktop")], ["apps", t("Programme")], ["palette", t("Palette & Lesbarkeit")]] as [View, string][]).map(([v, l]) => (
                 <button key={v} type="button" role="tab" aria-selected={view === v} aria-pressed={view === v} onClick={() => setView(v)}>{l}</button>
               ))}
             </div>
+            <p className="stage-title"><b>{SCHEMES[settings.scheme].label}</b><span>{settings.mode === "dark" ? t("dunkel") : t("hell")}</span></p>
             <span className="grow" />
             {view === "desktop" && bothModes && !onlyOs && <OsToggle os={os} onChange={setOs} />}
             {view === "desktop" && <label className="check"><input type="checkbox" checked={bothModes} onChange={(e) => setBothModes(e.target.checked)} />{" "}{t("Hell und dunkel nebeneinander")}</label>}
-            <button type="button" className="primary" onClick={() => setTab("export")}>{t("Weiter: Exportieren →")}</button>
           </div>
           <div className="view-body">
           {view === "desktop" && (bothModes ? (
@@ -66,7 +69,7 @@ export function VorschauPane({ s }: { s: Studio }) {
                 <span className="grow" />
                 <button type="button" className="ghost" onClick={() => copy(cur)}>{t("Kopieren")}</button>
                 {settings.overrides?.[editRole] && <button type="button" className="ghost" onClick={() => setOverride(editRole, undefined)}>{t("Zurücksetzen")}</button>}
-                <button type="button" className="ghost" onClick={() => setEditRole(undefined)} aria-label={t("Schließen")}>✕</button>
+                <button type="button" className="ghost icon" onClick={() => setEditRole(undefined)} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
               </div>
             );
           })()}

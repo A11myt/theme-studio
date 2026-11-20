@@ -1,5 +1,6 @@
 // Theme auf diesem Rechner anwenden: zeigt vorher, was passiert, danach das Protokoll der Programme.
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useDialog } from "../lib/useDialog";
 import { effectiveSource, SCHEMES, type ThemeSettings } from "../lib/color";
 import { FONT_PRESETS, hasFonts, type Fonts } from "../lib/fonts";
@@ -64,7 +65,7 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
         <div className="wh-head">
           <h2>{t("Auf diesem Rechner anwenden")}</h2>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} disabled={state === "running"} aria-label={t("Schließen")}>✕</button>
+          <button type="button" className="ghost icon" onClick={onClose} disabled={state === "running"} aria-label={t("Schließen")}><X size={16} aria-hidden="true" /></button>
         </div>
         <div className="pad form">
           <ul className="apply-list">
@@ -83,7 +84,7 @@ export function ApplyDialog({ settings, fonts, prompt, image, wallpaperDir, onCl
         <div className="wh-foot">
           <small className="empty">{state === "running" ? t("läuft … (Hooks brauchen ein paar Sekunden)") : state === "done" ? t("Fertig.") : state === "error" ? t("Es gab Fehler – siehe oben.") : ""}</small>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>
+          <button type="button" className="ghost icon" onClick={onClose} disabled={state === "running"}>{state === "done" ? t("Schließen") : t("Abbrechen")}</button>
           {state !== "done" && <button type="button" className="primary" onClick={run} disabled={state === "running"}>
             {state === "running" ? t("Wird angewendet …") : state === "error" ? t("Nochmal") : t("Anwenden")}</button>}
         </div>
