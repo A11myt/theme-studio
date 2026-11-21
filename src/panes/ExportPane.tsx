@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { SlidersHorizontal } from 'lucide-react';
 import { ExportVisibility, compactHidden } from '../components/ExportVisibility';
-import { StepNav, STEPS } from "../components/StepLayout";
 import { SCHEMES } from "../lib/color";
 import { renderTemplate } from "../lib/exporters";
 import { ompTemplate, p10kOverlay } from "../lib/prompt";
@@ -28,10 +27,9 @@ export function ExportPane({ s }: { s: Studio }) {
     <div className="pane export-pane">
         <section className="card summary">
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
-          <span className="sum-text"><span className="eyebrow">{t("Schritt {n} von {total}", { n: STEPS.length, total: STEPS.length })}</span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
+          <span className="sum-text"><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
           <span className="grow" />
           <button type="button" className="ghost" aria-expanded={showVis} onClick={() => setShowVis((v) => !v)}><SlidersHorizontal size={15} aria-hidden="true"/>{t('Ansicht anpassen')}</button>
-          <StepNav s={s} step="export" />
           {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>{t("Anwenden")}</button>}
         </section>
         {showVis && <section className="card visibility-card">

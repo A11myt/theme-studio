@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { OsToggle } from "../components/OsToggle";
-import { StepHead, StepNav } from "../components/StepLayout";
+import { StepHead } from "../components/StepLayout";
 
 type View = "desktop" | "apps" | "palette";
 import { AppPreviews } from "../components/AppPreviews";
@@ -20,8 +20,7 @@ export function VorschauPane({ s }: { s: Studio }) {
   return (
     <div className="pane vorschau-pane">
         <section className="card detail" id="vorschau" aria-labelledby="step-vorschau-title">
-          <StepHead step="vorschau" hint={t("Alles zusammen prüfen: Desktop, Programme und Lesbarkeit. Farben lassen sich hier einzeln anpassen.")}
-            aside={<StepNav s={s} step="vorschau" />} />
+          <StepHead step="vorschau" hint={t("Alles zusammen prüfen: Desktop, Programme und Lesbarkeit. Farben lassen sich hier einzeln anpassen.")} />
           <div className="detail-head">
             <div className="seg" role="tablist" aria-label={t("Ansicht")}>
               {([["desktop", t("Desktop")], ["apps", t("Programme")], ["palette", t("Palette & Lesbarkeit")]] as [View, string][]).map(([v, l]) => (

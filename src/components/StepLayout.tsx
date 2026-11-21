@@ -1,7 +1,7 @@
-// Einheitliches Gerüst für die Schritte: links die große Live-Vorschau, rechts die Einstellungen
-// mit Schritt-Kopf (wo bin ich, was mache ich hier) und Fuß (zurück / weiter).
+// Einheitliches Gerüst für jeden Bereich: links die große Live-Vorschau, rechts die Einstellungen
+// mit knappem Kopf (wo bin ich, was mache ich hier). Die Bereiche sind eigenständig – keine Reihenfolge.
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Monitor, SlidersHorizontal } from "lucide-react";
+import { Monitor, SlidersHorizontal } from "lucide-react";
 import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
@@ -10,28 +10,10 @@ export const STEPS = ["farbe", "schrift", "terminal", "vorschau", "export"] as c
 type Step = (typeof STEPS)[number];
 const LABEL: Record<Step, string> = { farbe: "Farbe", schrift: "Schrift", terminal: "Terminal", vorschau: "Vorschau", export: "Export" };
 
-export function StepNav({ s, step }: { s: Studio; step: Step }) {
-  const i = STEPS.indexOf(step);
-  const prev = STEPS[i - 1];
-  const next = STEPS[i + 1];
-  return (
-    <div className="step-nav">
-      {prev && <button type="button" className="ghost" onClick={() => s.setTab(prev)}>
-        <ArrowLeft size={16} aria-hidden="true" />{t(LABEL[prev])}
-      </button>}
-      <span className="grow" />
-      {next && <button type="button" className="primary" onClick={() => s.setTab(next)}>
-        {t("Weiter: {step}", { step: t(LABEL[next]) })}<ArrowRight size={16} aria-hidden="true" />
-      </button>}
-    </div>
-  );
-}
-
 export function StepHead({ step, hint, aside }: { step: Step; hint: string; aside?: ReactNode }) {
   return (
     <header className="step-head">
       <div className="step-head-text">
-        <span className="eyebrow">{t("Schritt {n} von {total}", { n: STEPS.indexOf(step) + 1, total: STEPS.length })}</span>
         <h2 id={`step-${step}-title`}>{t(LABEL[step])}</h2>
         <p className="hint">{hint}</p>
       </div>
@@ -41,14 +23,13 @@ export function StepHead({ step, hint, aside }: { step: Step; hint: string; asid
 }
 
 interface Props {
-  s: Studio;
   step: Step;
   hint: string;
   preview: ReactNode;
   children: ReactNode;
 }
 
-export function StepLayout({ s, step, hint, preview, children }: Props) {
+export function StepLayout({ step, hint, preview, children }: Props) {
   const [previewOpen, setPreviewOpen] = useState(false);
   return (
     <div className="pane step-pane" data-preview={previewOpen}>
@@ -60,7 +41,6 @@ export function StepLayout({ s, step, hint, preview, children }: Props) {
       <aside className="card inspector" aria-labelledby={`step-${step}-title`}>
         <StepHead step={step} hint={hint} />
         <div className="inspector-body">{children}</div>
-        <StepNav s={s} step={step} />
       </aside>
     </div>
   );

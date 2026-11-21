@@ -9,7 +9,7 @@ import { t } from "../lib/i18n";
 export function TerminalPane({ s }: { s: Studio }) {
   const { prompt, setPrompt, setShowWizard } = s;
   return (
-    <StepLayout s={s} step="terminal"
+    <StepLayout step="terminal"
       hint={t("Optional: ein eigener Prompt, passend zum Theme eingefärbt.")}
       preview={<LivePreview s={s} initial="terminal" />}>
 

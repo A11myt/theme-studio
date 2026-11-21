@@ -55,7 +55,7 @@ export function App() {
               className={id === "sammlung" ? "tab-lib" : ""}
               tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} title={`${t(label)} (Alt+${i + 1})`}>
               <Icon className="area-icon" size={18} aria-hidden="true" />
-              {id !== "sammlung" && <span className="step" aria-hidden="true">{i + 1}</span>}{t(label)}
+              {t(label)}
               {id === "sammlung" && themes.length > 0 && <span className="count" aria-label={t("{n} gespeichert", { n: themes.length })}>{themes.length}</span>}</button>
           })}
         </nav>

@@ -66,7 +66,7 @@ export function FarbePane({ s }: { s: Studio }) {
   );
 
   return (
-    <StepLayout s={s} step="farbe"
+    <StepLayout step="farbe"
       hint={t("Wähle Ausgangsfarbe und Variante – die Vorschau zeigt jede Änderung sofort.")}
       preview={<LivePreview s={s} initial="desktop" notice={notice} actions={actions} footer={variants} onDropFiles={(f) => void addImages(f)} />}>
 
