@@ -4310,7 +4310,7 @@ dependencies = [
 
 [[package]]
 name = "theme-studio"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "log",
  "serde",
