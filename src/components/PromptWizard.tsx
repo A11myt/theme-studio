@@ -12,6 +12,7 @@ interface Props {
   value: PromptOptions;
   c: Palette;
   fonts: Fonts;
+  start?: string;          // Schritt-id, bei der der Assistent einsteigen soll (sonst von vorn)
   onDone: (o: PromptOptions) => void;
   onClose: () => void;
 }
@@ -58,11 +59,17 @@ export const STEPS: Step[] = [
   ] },
 ];
 
-export function PromptWizard({ value, c, fonts, onDone, onClose }: Props) {
+export function PromptWizard({ value, c, fonts, start, onDone, onClose }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [o, setO] = useState<PromptOptions>({ ...value, enabled: true });
-  const [i, setI] = useState(0);
+  // Startschritt: passende Schritt-id → direkt dort einsteigen (klickbare Chips im Terminal-Bereich)
+  const [i, setI] = useState(() => {
+    if (!start) return 0;
+    const vis = STEPS.filter((st) => !st.when || st.when({ ...value, enabled: true }));
+    const idx = vis.findIndex((st) => st.id === start);
+    return idx < 0 ? 0 : idx;
+  });
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   // Tasten: Esc schließt, 1–9 wählt eine Antwort (wie bei p10k configure), ← zurück

@@ -28,14 +28,14 @@ export function TerminalPane({ s }: { s: Studio }) {
       </Field>
 
       {prompt.enabled && (
-        <Field label={t("Aussehen")}>
-          <div className="prompt-summary">
-            <span className="chip">{{ lean: "Lean", classic: "Classic", rainbow: "Rainbow", pure: "Pure" }[prompt.style]}</span>
-            <span className="chip">{prompt.lines === 1 ? t("1 Zeile") : prompt.frame ? t("2 Zeilen mit Rahmen") : t("2 Zeilen")}</span>
-            <span className="chip">{prompt.icons ? t("Symbole an") : t("Symbole aus")}</span>
-            <span className="chip">{t("Zeichen {c}", { c: prompt.char })}</span>
-            <span className="chip">{t("rechts: {list}", { list: prompt.right.map((r) => t(RIGHT_LABELS[r])).join(", ") || t("nichts") })}</span>
-            <span className="chip">{prompt.transient ? t("zusammenfalten") : t("nicht zusammenfalten")}</span>
+        <Field label={t("Aussehen")} hint={t("Zum Ändern auf einen Punkt klicken.")}>
+          <div className="prompt-summary" role="group" aria-label={t("Aussehen")}>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("style")}>{{ lean: "Lean", classic: "Classic", rainbow: "Rainbow", pure: "Pure" }[prompt.style]}</button>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("lines")}>{prompt.lines === 1 ? t("1 Zeile") : prompt.frame ? t("2 Zeilen mit Rahmen") : t("2 Zeilen")}</button>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("icons")}>{prompt.icons ? t("Symbole an") : t("Symbole aus")}</button>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("char")}>{t("Zeichen {c}", { c: prompt.char })}</button>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("right")}>{t("rechts: {list}", { list: prompt.right.map((r) => t(RIGHT_LABELS[r])).join(", ") || t("nichts") })}</button>
+            <button type="button" className="chip" title={t("Ändern")} onClick={() => setShowWizard("transient")}>{prompt.transient ? t("zusammenfalten") : t("nicht zusammenfalten")}</button>
           </div>
         </Field>
       )}

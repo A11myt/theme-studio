@@ -48,7 +48,7 @@ export function useStudio() {
     try { return { ...DEFAULT_PROMPT, ...JSON.parse(localStorage.getItem("theme-studio-prompt") ?? "{}") }; } catch { return DEFAULT_PROMPT; }
   });
   const setPrompt = (o: PromptOptions) => { setPromptState(o); try { localStorage.setItem("theme-studio-prompt", JSON.stringify(o)); } catch { /* egal */ } };
-  const [showWizard, setShowWizard] = useState(false);
+  const [showWizard, setShowWizard] = useState<boolean | string>(false);   // string = Startschritt des Assistenten
   // Einzeltasten-Kürzel (1–9, D, H, Z) – abschaltbar, z. B. für Spracheingabe/Screenreader (WCAG 2.1.4)
   const [singleKeys, setSingleKeysState] = useState(() => { try { return localStorage.getItem("theme-studio-single-keys") !== "0"; } catch { return true; } });
   const setSingleKeys = (on: boolean) => { setSingleKeysState(on); try { localStorage.setItem("theme-studio-single-keys", on ? "1" : "0"); } catch { /* egal */ } };

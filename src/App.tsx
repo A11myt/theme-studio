@@ -61,18 +61,17 @@ export function App() {
         </nav>
         <span className="grow" />
         <div className="tools">
-          <button type="button" className="ghost icon library-trigger" aria-pressed={libOpen} aria-label={t('Bildbibliothek')} title={`${t('Bildbibliothek')}${singleKeys ? ' (B)' : ''}`} onClick={() => setLibOpen(!libOpen)}><Images size={17} aria-hidden="true" /></button>
+          <button type="button" className="ghost tool library-trigger" aria-pressed={libOpen} aria-label={t('Bildbibliothek')} title={`${t('Bildbibliothek')}${singleKeys ? ' (B)' : ''}`} onClick={() => setLibOpen(!libOpen)}><Images size={17} aria-hidden="true" /><span className="btn-label">{t("Bibliothek")}</span></button>
           <button type="button" className="ghost icon" onClick={undo} disabled={!canUndo} title={t("Rückgängig (Strg+Z)")} aria-label={t("Rückgängig")}><Undo2 size={16} aria-hidden="true" /></button>
           <button type="button" className="ghost icon" onClick={redo} disabled={!canRedo} title={t("Wiederholen (Strg+Y)")} aria-label={t("Wiederholen")}><Redo2 size={16} aria-hidden="true" /></button>
-          <MoreMenu items={[
+          <MoreMenu text={t("Mehr")} items={[
             { label: t("Zufälliges Theme"), hint: "Z", onSelect: surprise },
             { label: t("Theme-Datei importieren …"), onSelect: () => importInput.current?.click() },
             { label: t("Link zu diesem Theme kopieren"), onSelect: () => void shareTheme(themeName, settings, fonts) },
-            { label: libOpen ? t("Seitenleiste ausblenden") : t("Seitenleiste einblenden"), hint: "B", onSelect: () => setLibOpen(!libOpen) },
           ]} />
           <input ref={importInput} type="file" accept=".json,application/json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importTheme(f); e.target.value = ""; }} />
-          <button type="button" className="ghost icon" onClick={() => setShowSettings(true)} aria-label={t("Einstellungen")} title={t("Einstellungen")}><Settings size={16} aria-hidden="true" /></button>
+          <button type="button" className="ghost tool" onClick={() => setShowSettings(true)} aria-label={t("Einstellungen")} title={t("Einstellungen")}><Settings size={16} aria-hidden="true" /><span className="btn-label">{t("Einstellungen")}</span></button>
         </div>
         <span className="top-sep" aria-hidden="true" />
         <div className="project-actions"><span className="theme-swatch" style={{ background: pal.primary }} aria-hidden="true" />
@@ -98,12 +97,12 @@ export function App() {
 
       {wallhaven && <Wallhaven wallpaperDir={app.wallpaperDir} initialColor={wallhaven.color}
         themeColors={[effSource, ...(image?.sources ?? [])]} onClose={() => setWallhaven(false)} onPick={(f) => addImages([f])} />}
-      {showWizard && <PromptWizard value={prompt} c={pal} fonts={fonts} onClose={() => setShowWizard(false)}
+      {showWizard && <PromptWizard value={prompt} c={pal} fonts={fonts} start={typeof showWizard === "string" ? showWizard : undefined} onClose={() => setShowWizard(false)}
         onDone={(o) => { setPrompt(o); flash(t("Prompt übernommen")); }} />}
       {showApply && (system === "windows"
         ? <WindowsApply name={themeName} settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />
         : <ApplyDialog settings={settings} fonts={fonts} image={image} prompt={prompt} wallpaperDir={app.wallpaperDir} onClose={() => setShowApply(false)} />)}
-      {showSettings && <SettingsDialog initialExports={showSettings === "exports"} value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys}
+      {showSettings && <SettingsDialog value={app} singleKeys={singleKeys} onSingleKeys={setSingleKeys}
         system={systemChoice ?? "auto"} detected={detected} onSystem={setSystemChoice} onClose={() => setShowSettings(false)}
         onSave={(s) => { setApp(s); storeSettings(s); flash(t("Einstellungen gespeichert")); }} />}
       {isTauri && systemChoice === null && <FirstRun detected={detected} onChoose={setSystemChoice} />}

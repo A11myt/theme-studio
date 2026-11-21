@@ -934,3 +934,15 @@ svg { flex: none; }
   .workspace-switch button[aria-pressed=true] { background: var(--panel-3); color: var(--fg); font-weight: 600; }
   .step-pane[data-preview=false] > .stage, .step-pane[data-preview=true] > .inspector { display: none; }
 }
+
+/* 0.5.2 UX: Tools-Leiste mit Text statt nur Icons, klickbare Prompt-Chips, Export-Sichtbarkeit inline */
+.tools .tool { display: inline-flex; align-items: center; gap: 6px; }
+.tools .btn-label { font-size: .85rem; white-space: nowrap; }
+@media (max-width: 1399px) {                 /* schmaler als das Standardfenster → wieder nur Icons */
+  .tools .btn-label { display: none; }
+  .tools .tool { width: var(--h); padding: 0; justify-content: center; }
+}
+@media (max-width: 900px) { .top .tools .tool { width: 36px; height: 36px; } }
+button.chip { cursor: pointer; font-family: inherit; color: inherit; }
+button.chip:hover, button.chip:focus-visible { border-color: var(--accent); outline: none; }
+.visibility-card { padding: 14px 16px; }

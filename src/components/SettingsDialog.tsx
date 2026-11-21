@@ -8,12 +8,9 @@ import { setLang, t, useLang } from "../lib/i18n";
 import type { Detected, SystemChoice } from "../lib/system";
 import { SystemSettings } from './SystemSettings';
 
-import { ExportVisibility, compactHidden } from './ExportVisibility';
-
-const tabs = ['general', 'exports', 'background'] as const;
+const tabs = ['general', 'background'] as const;
 
 interface Props {
-  initialExports: boolean;
   value: AppSettings;
   singleKeys: boolean;
   onSingleKeys: (on: boolean) => void;
@@ -24,11 +21,11 @@ interface Props {
   onClose: () => void;
 }
 
-export function SettingsDialog({ initialExports, value, singleKeys, onSingleKeys, system, detected, onSystem, onSave, onClose }: Props) {
+export function SettingsDialog({ value, singleKeys, onSingleKeys, system, detected, onSystem, onSave, onClose }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialog(sheetRef);
   const [s, setS] = useState(value);
-  const [tab, setTab] = useState(initialExports ? 'exports' : 'general');
+  const [tab, setTab] = useState<typeof tabs[number]>('general');
   const lang = useLang();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -57,10 +54,10 @@ export function SettingsDialog({ initialExports, value, singleKeys, onSingleKeys
             e.preventDefault();
             const next = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(tabs.indexOf(id) + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
             setTab(next); document.getElementById(`option-${next}`)?.focus();
-          }}>{id === 'general' ? t('Allgemein') : id === 'exports' ? t('Angezeigte Exporte') : t('Autostart & Dienste')}</button>)}
+          }}>{id === 'general' ? t('Allgemein') : t('Autostart & Dienste')}</button>)}
         </div>
         <div role="tabpanel" id="options-panel" aria-labelledby={`option-${tab}`} className="settings-content">
-        {tab === 'background' ? (isTauri && detected?.system === 'windows' ? <SystemSettings /> : <p className="hint pad">{t('Autostart, Infobereich und Hintergrunddienste lassen sich in der Windows-Desktop-App verwalten.')}</p>) : tab === 'exports' ? <ExportVisibility hidden={s.hiddenExports ?? compactHidden} change={hiddenExports => setS(prev => ({ ...prev, hiddenExports }))}/> : <>
+        {tab === 'background' ? (isTauri && detected?.system === 'windows' ? <SystemSettings /> : <p className="hint pad">{t('Autostart, Infobereich und Hintergrunddienste lassen sich in der Windows-Desktop-App verwalten.')}</p>) : <>
         {!isTauri ? (
           <p className="empty pad">{t("Speicherorte gibt es in der Desktop-App. Im Browser landen Dateien im Download-Ordner des Browsers.")}</p>
         ) : (

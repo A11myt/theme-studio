@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 
 export interface MenuItem { label: string; hint?: string; onSelect: () => void }
 
-export function MoreMenu({ items, label }: { items: MenuItem[]; label?: string }) {
+export function MoreMenu({ items, label, text }: { items: MenuItem[]; label?: string; text?: string }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -30,8 +30,8 @@ export function MoreMenu({ items, label }: { items: MenuItem[]; label?: string }
 
   return (
     <div className="more" ref={wrap}>
-      <button ref={btn} type="button" className="ghost icon" aria-haspopup="menu" aria-expanded={open}
-        aria-label={label ?? t("Weitere Aktionen")} title={label ?? t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}><Ellipsis size={16} aria-hidden="true" /></button>
+      <button ref={btn} type="button" className={`ghost ${text ? "tool" : "icon"}`} aria-haspopup="menu" aria-expanded={open}
+        aria-label={label ?? t("Weitere Aktionen")} title={label ?? t("Weitere Aktionen")} onClick={() => setOpen((o) => !o)}><Ellipsis size={16} aria-hidden="true" />{text && <span className="btn-label">{text}</span>}</button>
       {open && (
         <div className="more-menu" role="menu" onKeyDown={onKey}>
           {items.map((it, i) => (

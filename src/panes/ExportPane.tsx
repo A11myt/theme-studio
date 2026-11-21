@@ -1,17 +1,19 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { SlidersHorizontal } from 'lucide-react';
-import { compactHidden } from '../components/ExportVisibility';
+import { ExportVisibility, compactHidden } from '../components/ExportVisibility';
 import { StepNav, STEPS } from "../components/StepLayout";
 import { SCHEMES } from "../lib/color";
 import { renderTemplate } from "../lib/exporters";
 import { ompTemplate, p10kOverlay } from "../lib/prompt";
 import { isTauri } from "../lib/platform";
+import { storeSettings } from "../lib/settings";
 import { vscodeTheme } from "../lib/vscode";
 import type { Studio } from "../useStudio";
 import { t } from "../lib/i18n";
 
 export function ExportPane({ s }: { s: Studio }) {
   const tplInput = useRef<HTMLInputElement>(null);
+  const [showVis, setShowVis] = useState(false);   // „Ansicht anpassen“ direkt hier statt in den Einstellungen
   const { prompt, templates, addTemplates, deleteTemplate, settings, setShowApply, fonts, app, group, setGroup, image, pal, copy, saveFile, saveVsix, themeName, effSource, overrideCount, cmds, files, vsSettings, onlyOs } = s;
   const hidden = onlyOs === "windows" ? "linux" : onlyOs === "linux" ? "windows" : undefined;   // das andere System ausblenden
   const visible = (id: string) => !(app.hiddenExports ?? compactHidden).includes(id);
@@ -28,10 +30,14 @@ export function ExportPane({ s }: { s: Studio }) {
           <span className="sum-strip">{[pal.primary, pal.secondary, pal.tertiary, pal.surface_container_high, pal.surface].map((x, i) => <i key={i} style={{ background: x }} />)}</span>
           <span className="sum-text"><span className="eyebrow">{t("Schritt {n} von {total}", { n: STEPS.length, total: STEPS.length })}</span><b>{themeName}</b><small>{SCHEMES[settings.scheme].label} · {settings.mode === "dark" ? t("dunkel") : t("hell")} · {effSource}{overrideCount ? t(" · {n} überschrieben", { n: overrideCount }) : ""}{fonts.mono ? ` · ${fonts.mono}` : ""}</small></span>
           <span className="grow" />
-          <button type="button" className="ghost" onClick={() => s.setShowSettings('exports')}><SlidersHorizontal size={15} aria-hidden="true"/>{t('Ansicht anpassen')}</button>
+          <button type="button" className="ghost" aria-expanded={showVis} onClick={() => setShowVis((v) => !v)}><SlidersHorizontal size={15} aria-hidden="true"/>{t('Ansicht anpassen')}</button>
           <StepNav s={s} step="export" />
           {isTauri && <button type="button" className="primary" onClick={() => setShowApply(true)}>{t("Anwenden")}</button>}
         </section>
+        {showVis && <section className="card visibility-card">
+          <ExportVisibility hidden={app.hiddenExports ?? compactHidden}
+            change={(ids) => { const next = { ...app, hiddenExports: ids }; s.setApp(next); storeSettings(next); }} />
+        </section>}
         <div className={`export-grid${hasPanels ? '' : ' files-only'}`}>
           {hasPanels && <div className="export-col">
         {visible('apply') && <section className="card export" id="export">
@@ -95,7 +101,7 @@ export function ExportPane({ s }: { s: Studio }) {
             </div>
           </div>
           <ul className="files">
-            {!count && <li><span>{t('Für diese Auswahl sind keine Dateien sichtbar.')}</span><button type="button" className="ghost" onClick={() => s.setShowSettings('exports')}>{t('Ansicht anpassen')}</button></li>}
+            {!count && <li><span>{t('Für diese Auswahl sind keine Dateien sichtbar.')}</span><button type="button" className="ghost" onClick={() => setShowVis(true)}>{t('Ansicht anpassen')}</button></li>}
             {listed.map((f) => (
               <li key={f.id}>
                 <span><b>{t(f.label)}</b><small>{t(f.hint, f.vars)}</small></span>
