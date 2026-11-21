@@ -37,7 +37,7 @@ export function App() {
     <div className={`app ${libOpen ? "" : "lib-closed"}`} style={{ "--accent": pal.primary, "--on-accent": pal.on_primary } as CSSProperties}>
       <a className="skip" href="#bereich">{t("Zum Inhalt springen")}</a>
       <header className="top">
-        <h1>Theme Studio</h1>
+        <h1 aria-label="Theme Studio" />{/* kompakte Marke: nur das Farb-Quadrat (::before); Name steht im Fenstertitel */}
         <nav className="tabs-nav" role="tablist" aria-label={t("Bereiche")}
           onKeyDown={(e) => {
             // Pfeiltasten/Pos1/Ende wechseln den Bereich (WAI-ARIA Tabs)

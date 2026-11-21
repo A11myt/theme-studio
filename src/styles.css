@@ -564,7 +564,7 @@ h3 { font-size: .85rem; font-weight: 600; color: var(--fg); }
 .tabs-nav button[aria-selected="true"] .step { background: var(--fg); color: var(--panel); }
 .tabs-nav .tab-lib::before { top: 18px; bottom: 18px; }
 .tools { gap: 6px; }
-.top .name { width: 200px; }
+.top .name { flex: 0 1 200px; min-width: 80px; }   /* darf schrumpfen, damit Speichern/Anwenden nie abgeschnitten werden */
 
 /* Seitenleiste */
 .library { background: var(--panel); border-right: 1px solid var(--line); padding: 4px 18px 28px; }
@@ -865,6 +865,7 @@ svg { flex: none; }
   .vstrip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .project-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.project-actions > button { flex: none; }   /* Buttons behalten ihre Breite; nur das Namensfeld gibt nach */
 .workspace-switch, .tabs-nav .area-icon, .canvas-heading, .top .library-trigger { display: none; }
 .hex-field { align-self: center; min-width: 0; }
 .hex-field label { display: inline-flex; align-items: center; gap: 8px; padding: 0 8px; border: 1px solid var(--control); border-radius: 6px; color: var(--muted); font: 600 .68rem var(--mono); }
